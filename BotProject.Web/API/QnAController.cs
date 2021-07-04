@@ -408,10 +408,12 @@ namespace BotProject.Web.API
                         int total = lstQnaGroup.Count();
                         for (int indexQGroup = 0; indexQGroup < total; indexQGroup++)
                         {
+                            
                             var itemQGroup = lstQnaGroup[indexQGroup];
                             var lstAnswer = itemQGroup.Answers.ToList();
                             var lstQuestion = itemQGroup.Questions.ToList();
-                            if(lstQuestion.Count() == 0 && lstAnswer.Count() == 0)
+                            var isKeyword = itemQGroup.IsKeyword ?? false;
+                            if (lstQuestion.Count() == 0 && lstAnswer.Count() == 0)
                             {
                                 IsAiml = false;
                                 response = request.CreateResponse(HttpStatusCode.OK, new { res = IsAiml, msg = "Dữ liệu chưa được lưu hoặc để trống" } );
@@ -461,40 +463,58 @@ namespace BotProject.Web.API
                             {
                                 foreach(var item in lstQuestion)
                                 {
-                                    for (int indexQ = 0; indexQ < _userSayStart.Length; indexQ++)
-                                    {
+                                    if(isKeyword == false) { // nếu không chọn dấu tích ở keyword thì k thêm *
                                         var itemQ = item;
-                                        string patternText = "";
+                                        string patternText  = itemQ.ContentText.ToUpper();
                                         string tempAnswer = postbackAnswer;
                                         if (postbackAnswer.Contains("postback"))
                                         {
                                             tempAnswer = "<srai>" + postbackAnswer + "</srai>";
                                         }
-                                        //sw.WriteLine("<category>");
-                                        //sw.WriteLine("<pattern>"+itemQ.ContentText.ToUpper()+"</pattern>");
-                                        //sw.WriteLine("<template>"+ tempAnswer + "</template>");
-                                        //sw.WriteLine("</category>");
-                                        if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartDefault)
-                                        {
-                                            patternText = itemQ.ContentText.ToUpper();
-                                        }
-                                        if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartFirst)
-                                        {
-                                            patternText = "* " + itemQ.ContentText.ToUpper();
-                                        }
-                                        if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartLast)
-                                        {
-                                            patternText = itemQ.ContentText.ToUpper() + " *";
-                                        }
-                                        if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartDouble)
-                                        {
-                                            patternText = "* " + itemQ.ContentText.ToUpper() + " *";
-                                        }
+
                                         sbFormDb.AppendLine("<category>");
                                         sbFormDb.AppendLine("<pattern>" + patternText + "</pattern>");
                                         sbFormDb.AppendLine("<template>" + tempAnswer + "</template>");
                                         sbFormDb.AppendLine("</category>");
                                     }
+                                    else
+                                    {
+                                        for (int indexQ = 0; indexQ < _userSayStart.Length; indexQ++)
+                                        {
+                                            var itemQ = item;
+                                            string patternText = "";
+                                            string tempAnswer = postbackAnswer;
+                                            if (postbackAnswer.Contains("postback"))
+                                            {
+                                                tempAnswer = "<srai>" + postbackAnswer + "</srai>";
+                                            }
+                                            //sw.WriteLine("<category>");
+                                            //sw.WriteLine("<pattern>"+itemQ.ContentText.ToUpper()+"</pattern>");
+                                            //sw.WriteLine("<template>"+ tempAnswer + "</template>");
+                                            //sw.WriteLine("</category>");
+                                            if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartDefault)
+                                            {
+                                                patternText = itemQ.ContentText.ToUpper();
+                                            }
+                                            if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartFirst)
+                                            {
+                                                patternText = "* " + itemQ.ContentText.ToUpper();
+                                            }
+                                            if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartLast)
+                                            {
+                                                patternText = itemQ.ContentText.ToUpper() + " *";
+                                            }
+                                            if (_userSayStart[indexQ] == CommonConstants.UserSay_IsStartDouble)
+                                            {
+                                                patternText = "* " + itemQ.ContentText.ToUpper() + " *";
+                                            }
+                                            sbFormDb.AppendLine("<category>");
+                                            sbFormDb.AppendLine("<pattern>" + patternText + "</pattern>");
+                                            sbFormDb.AppendLine("<template>" + tempAnswer + "</template>");
+                                            sbFormDb.AppendLine("</category>");
+                                        }
+                                    }
+                                    
                                 }                               
                             }
                         }
@@ -579,7 +599,7 @@ namespace BotProject.Web.API
                         item.QnAViewModel.QuestionViewModels = Mapper.Map<IEnumerable<Question>, IEnumerable<QuestionViewModel>>(lstQuestionDb);
                         var lstAnswerDb = _qnaService.GetListAnswerByGroupID(item.ID);
                         item.QnAViewModel.AnswerViewModels = Mapper.Map<IEnumerable<Answer>, IEnumerable<AnswerViewModel>>(lstAnswerDb);
-                        if (item.QnAViewModel.AnswerViewModels != null && item.QnAViewModel.AnswerViewModels.Count() != 0)
+                        if (item.QnAViewModel.AnswerViewModels != null && item.QnAViewModel.AnswerViewModels.Any())
                         {
                             foreach(var answer in item.QnAViewModel.AnswerViewModels)
                             {
@@ -720,6 +740,7 @@ namespace BotProject.Web.API
                 return response;
             });
         }
+
 
         //[Route("updatequestion")]
         //[HttpPost]

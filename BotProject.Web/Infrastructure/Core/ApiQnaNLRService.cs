@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -243,7 +244,7 @@ namespace BotProject.Web.Infrastructure.Core
                 _lstArt = new JavaScriptSerializer { MaxJsonLength = Int32.MaxValue, RecursionLimit = 100 }.Deserialize<List<SearchLawArticleViewModel>>(responseString);
                 if (_lstArt.Count() != 0)
                 {
-                    foreach(var item in _lstArt)
+                    foreach (var item in _lstArt)
                     {
                         item.html = HttpUtility.HtmlDecode(item.html);
                     }
@@ -251,6 +252,43 @@ namespace BotProject.Web.Infrastructure.Core
             }
             return _lstArt;
         }
+
+
+        public List<LegalVm> GetRelatesLegalAndArticle(string content)
+        {
+            var lstLegalVm = new List<LegalVm>();
+            var param = new
+            {
+                keyword = content,
+            };
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri("https://trogiupluat.vn");
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                HttpResponseMessage response = new HttpResponseMessage();
+                string json = JsonConvert.SerializeObject(param);
+                StringContent httpContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+                response = client.PostAsync("/LegalDoc/SearchRealtedArticle", httpContent).Result;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    string responseString = response.Content.ReadAsStringAsync().Result;
+
+                    var result = new JavaScriptSerializer { MaxJsonLength = Int32.MaxValue, RecursionLimit = 100 }.Deserialize<LegalResult>(responseString);
+                    lstLegalVm = result.data;
+                }
+            }
+            return lstLegalVm;
+        }
         #endregion
+
+        public class LegalResult
+        {
+            public bool status { get; set; }
+            public string message { get; set; }
+            public List<LegalVm> data { get; set; }
+        }
     }
 }

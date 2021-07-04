@@ -22,6 +22,11 @@ namespace BotProject.Web.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="text">Params input phải encode url System.Web.HttpUtility.UrlEncode(text)</param>
+        /// <returns></returns>
         public JsonResult ConvertVN(string text)
         {
             string textVN = "";

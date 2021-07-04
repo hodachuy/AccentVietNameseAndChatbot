@@ -149,11 +149,6 @@ namespace BotProject.Web.Controllers
         public ActionResult FormChat(string token, string botId)
 		{
 			int botID = Int32.Parse(botId);
-			var botDb = _botDbService.GetByID(botID);
-			var settingDb = _settingService.GetSettingByBotID(botID);
-			var settingVm = Mapper.Map<BotProject.Model.Models.Setting, BotSettingViewModel>(settingDb);
-			var systemConfig = _settingService.GetListSystemConfigByBotId(botID);
-			var systemConfigVm = Mapper.Map<IEnumerable<BotProject.Model.Models.SystemConfig>, IEnumerable<SystemConfigViewModel>>(systemConfig);
 
             //var lstAIML = _aimlFileService.GetByBotId(botID);
             // _botService.loadAIMLFile(lstAIML, botID.ToString());
@@ -167,6 +162,11 @@ namespace BotProject.Web.Controllers
 
             string pathAIML2Graphmaster = ConfigurationManager.AppSettings["AIML2GraphmasterPath"] + "BotID_" + botId + ".bin";
             _aimlBotService.LoadGraphmasterFromAIMLBinaryFile(pathAIML2Graphmaster, _botService);
+
+            var settingDb = _settingService.GetSettingByBotID(botID);
+            var settingVm = Mapper.Map<BotProject.Model.Models.Setting, BotSettingViewModel>(settingDb);
+            var systemConfig = _settingService.GetListSystemConfigByBotId(botID);
+            var systemConfigVm = Mapper.Map<IEnumerable<BotProject.Model.Models.SystemConfig>, IEnumerable<SystemConfigViewModel>>(systemConfig);
 
             UserBotViewModel userBot = new UserBotViewModel();
 			userBot.StopWord = settingVm.StopWord;

@@ -30,14 +30,16 @@ var common = {
             sessionStorage.setItem("bot-id", "");
             sessionStorage.setItem("nav-active-sub", "");
         }
-        if(applicationGroupID != GROUP_SUPPORT){
-                common.getBotById();
-                common.registerEvents();
-                common.createBot();
-                common.createFormBotQnA();
-                common.eventNavbar();
-                common.cloneBot();
-                common.trainingBot();
+        if (applicationGroupID != GROUP_SUPPORT) {
+            common.getBotById();
+            common.registerEvents();
+            common.createBot();
+            common.createFormBotQnA();
+            common.eventNavbar();
+            common.trainingBot();
+            common.cloneBotFromTemplate();
+            common.cloneBotSelect();
+            common.saveBotClone();
         }
     },
     eventNavbar: function () {
@@ -403,7 +405,7 @@ var common = {
             $('#modalCreateBot').modal('hide');
         })
     },
-    cloneBot: function () {
+    cloneBotFromTemplate: function () {
         $('body').on('click', '.card-tmp-bot', function (e) {
             if ($('#userId').val() == "4d1d77aa-42a7-4e88-97a6-baed104c2e60") {
                 swal({
@@ -424,7 +426,84 @@ var common = {
             $("#txtBotCloneName").val('');
             $('#modalBotClone').modal('show');
         })
+    },
+    cloneBotSelect: function () {
+        $('body').on('click', '.btn-clone-bot', function (e) {
+            var txtBotTemplateId = $(this).attr('data-bot-id');
+            $("#txtBotTemplateId").val(txtBotTemplateId);
+            $("#txtBotCloneName").val('');
+            $('#modalBotClone').modal('show');
+        })
+    },
+    saveBotClone:function(){
         $('body').on('click', '#btnSaveBotClone', function () {
+            //$('#modalBotClone').modal('hide');
+            //$('#modalBotCloneProgessBar').modal('show');         
+            //$('#modalBotCloneProgessBar .modal-body').empty().append('<div class="progress"></div><span style="float:right" id="percent">a</span>')
+            //var botName = $('#txtBotCloneName').val();
+            //var botId = $("#txtBotTemplateId").val();
+            //if (botName == '' || botName == undefined)
+            //    return false;
+            //if (botId == '' || botId == undefined)
+            //    return false;
+            //var params = {
+            //    botId: botId,
+            //    userId: $('#userId').val(),
+            //    botName: botName,
+            //    botAlias: common.getSeoTitle(botName)
+            //}
+            //params = JSON.stringify(params);
+            //$.ajax({
+            //    xhr: function () {
+            //        var xhr = new window.XMLHttpRequest();
+            //        xhr.upload.addEventListener("progress", function (evt) {
+            //            if (evt.lengthComputable) {
+            //                var percentComplete = evt.loaded / evt.total;
+            //                console.log(percentComplete);
+            //                $("#percent").text(Math.floor(percentComplete * 100) + '%')
+            //                $('.progress').css({
+            //                    width: percentComplete * 100 + '%'
+            //                });
+            //                if (percentComplete === 1) {
+            //                    $('.progress').addClass('hide');
+            //                }
+            //            }
+            //        }, false);
+            //        xhr.addEventListener("progress", function (evt) {
+            //            if (evt.lengthComputable) {
+            //                var percentComplete = evt.loaded / evt.total;
+            //                console.log(percentComplete);
+
+            //                $('.progress').css({
+            //                    width: percentComplete * 100 + '%'
+            //                });
+            //            }
+            //        }, false);
+            //        return xhr;
+            //    },
+            //    type: 'POST',
+            //    url: _Host + urlCloneBot,
+            //    data: params,
+            //    contentType: "application/json; charset=utf-8",
+            //    dataType: "json",
+            //    success: function (response) {
+            //        if (response.status) {
+            //                $('#modalBotCloneProgessBar .modal-footer').empty().append('<a href="#" class="btn btn-success" id="btnCancleSaveBotClone">Thành công</a>')
+            //                var tempHtml = common.templateBot(response.data);
+            //                $('#collapseDiv_0').append(tempHtml);
+            //                $("#model-notify").modal('hide');
+            //                swal({
+            //                    title: "Thông báo",
+            //                    text: "Thêm thành công",
+            //                    confirmButtonColor: "#EF5350",
+            //                    type: "success"
+            //                }, function () { $("#model-notify").modal('show'); });
+            //            } else {
+            //                alert("Lưu thất bại, vui lòng liên hệ quản trị");
+            //                console.log(response.data)
+            //            }
+            //    }
+            //});
             $('#modalBotClone').modal('hide');
             var botName = $('#txtBotCloneName').val();
             var botId = $("#txtBotTemplateId").val();
@@ -496,7 +575,7 @@ var common = {
             });
         })
     },
-    trainingBot:function(){
+    trainingBot: function () {
         $('body').on('click', '#btnTrainingBot', function () {
             var botId = $(this).attr('data-botID');
             var params = {
@@ -632,7 +711,7 @@ var elementCard;
 var modalCard = {
     modalEvent: function (elm) {
         // action form modal area      
-        $("body").on('click', elm , function (e) {
+        $("body").on('click', elm, function (e) {
             $("#modalListCard").modal({
                 backdrop: 'static',
                 keyboard: true,
@@ -667,13 +746,13 @@ var modalCard = {
                 },
             });
         },
-        this.SetValueCard = function (cardId,cardName) {
+        this.SetValueCard = function (cardId, cardName) {
             elementCard.children().attr('data-card-id', cardId);
             elementCard.children().attr('title', cardName);
             elementCard.find('.filter-option-inner-inner').html(cardName);
             $("#modalListCard").modal('hide');
         },
-        this.RenderTable = function(data){
+        this.RenderTable = function (data) {
             var dataTable = data.Items;
             var html = '';
             var paginationListHtml = '';

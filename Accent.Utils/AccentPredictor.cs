@@ -426,28 +426,9 @@ namespace Accent.Utils
                 for (int i = 1; i < pathVertex.Count - 1; i++)
                 {
                     BaseVertex vertext = pathVertex[i];
-                    text += idxWordMap[vertext.get_id()] + " ";
-                    if (text.Contains("đầm dáng"))
-                    {
-                        text.Replace("đầm dáng", "đảm đang");
-                    }
-                    if (text.Contains("chào bán"))
-                    {
-                        text = Regex.Replace(text, "chào bán", "chào bạn");
-                    }
-                    if (text.Contains("bị đầu tay"))
-                    {
-                        text = Regex.Replace(text, "bị đầu tay", "bị đau tay");
-                    }
-                    if (text.Contains("tay tôi bị đầu"))
-                    {
-                        text = Regex.Replace(text, "tay tôi bị đầu", "tay tôi bị đau");
-                    }
-                    if (text.Contains("khoản nước"))
-                    {
-                        text = Regex.Replace(text, "khoản nước", "khoan nước");
-                    }
+                    text += idxWordMap[vertext.get_id()] + " ";                   
                 }
+                text = ReplaceWordsIncorrect(text);
                 output.Add(processOutput(@in, text.Trim()), path.get_weight());
             }
 
@@ -670,23 +651,31 @@ namespace Accent.Utils
                 }
             }
             string resultOutput = output.ToString();
-            if (resultOutput.Contains("đầm dáng"))
-            {
-                resultOutput.Replace("đầm dáng", "đảm đang");
-            }
-            if (resultOutput.Contains("bị đầu tay"))
-            {
-                resultOutput = Regex.Replace(resultOutput, "bị đầu tay", "bị đau tay");
-            }
-            if (resultOutput.Contains("chào bán"))
-            {
-                resultOutput = Regex.Replace(resultOutput, "chào bán", "chào bạn");
-            }
-            if (resultOutput.Contains("tay tôi bị đầu"))
-            {
-                resultOutput = Regex.Replace(resultOutput, "tay tôi bị đầu", "tay tôi bị đau");
-            }
+            resultOutput = ReplaceWordsIncorrect(resultOutput);
             return resultOutput.Trim();
+        }
+
+        private string ReplaceWordsIncorrect(string text)
+        {
+            if (String.IsNullOrEmpty(text))
+                return "";
+
+            var listWordNoCorrect = new Dictionary<string, string>()
+            {
+                {"số hữu","sở hữu"},
+                {"đau đáu","đau đầu"},
+                {"đầm dáng","đảm đang"},
+                {"chào bán","chào bạn"},
+                {"bị đầu tay","tay tôi bị đau"},
+                {"tay tôi bị đầu","tay tôi bị đau"},
+            };
+
+            foreach (KeyValuePair<string, string> replacement in listWordNoCorrect)
+            {
+                text = Regex.Replace(text, replacement.Key, replacement.Value);
+            }
+
+            return text;
         }
 
         private string processOutput(string input, string output)

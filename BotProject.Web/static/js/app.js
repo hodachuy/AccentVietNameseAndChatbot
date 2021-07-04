@@ -275,12 +275,15 @@ eventer(messageEvent, function (e) {
     } else {
         console.log(e.data)
        if (e.data != undefined) {
-			if(e.data.includes("faq")){
+			if(e.data = "/{"){
+				return false;
+			}
+			else if(e.data.includes("faq")){
 				var modal = document.querySelector(".bot-modal");
 				$("#bot-iframe").empty().append('<iframe style="width:100rem" width="100" height="378"frameborder="0"allowtransparency="true"allowfullscreen="true" src="' + e.data + '"></iframe>');
 				modal.classList.toggle("bot-show-modal");
 			}
-			if (e.data.includes("File/Images")) {
+			else if (e.data.includes("File/Images")) {
 			    var modal = document.querySelector(".bot-modal");
 			    $("#bot-iframe").empty().append('<image class="cbox-image-reponsive" style="width:100%" src="' + e.data + '"/>');
 			    modal.classList.toggle("bot-show-modal");

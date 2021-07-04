@@ -1,5 +1,5 @@
-﻿var url = 'http://localhost:54160/',
-    domainApp = 'http://localhost:54160/';
+﻿const getSrcOrigin = () => new URL(document.currentScript.src).origin;
+var appDomain = getSrcOrigin() + "/";
 
 var lacviet = {
     setup: function (channelGroupId) {
@@ -7,7 +7,7 @@ var lacviet = {
         lacviet.initFormChat(channelGroupId);
         //lacviet.tempPopupQnA();
         lacviet.modalContainer();
-        //domainApp = decryptedUrl.slice(0, -1);
+        //appDomain = decryptedUrl.slice(0, -1);
         //var modal = document.querySelector(".bot-modal");
         //var closeButton = document.querySelector(".bot-close-button");
         //function toggleModal() {
@@ -41,7 +41,7 @@ var lacviet = {
         //styleIframeCustom += 'top: 30px;'
         styleIframeCustom += 'z-index: 99999;'
         styleIframeCustom += 'transition: none 0s ease 0s!important;"';
-        url = url + "LcChatBox/Index?channelGroupID=" + channelGroupId;
+        let url = appDomain + "LcChatBox/Index?channelGroupID=" + channelGroupId;
         html += '<span style="vertical-align:bottom;width:0px;height:0px">';
         html += '<iframe id="dialog_iframe" class="fb_customer_chat_bounce_out_v2 name="f12691cd05677d" frameborder="0"allowtransparency="true"allowfullscreen="true"scrolling="no"';
         html += 'allow="encrypted-media" src="' + url + '" ' + styleIframeCustom + '"></iframe>';
@@ -60,7 +60,7 @@ var lacviet = {
         link.type = 'text/css';
         link.rel = 'stylesheet';
         headID.appendChild(link);
-        link.href = domainApp + "assets/livechat/css/chatbox-dialog.css";
+        link.href = appDomain + "assets/livechat/css/chatbox-dialog.css";
     },
     modalContainer: function () {
         var tempModalContainer = '';
@@ -132,7 +132,7 @@ $('body').on('click', '.fb_dialog', function (e) {
             $('#dialog_iframe').css('left', '0');
 
             var frame = document.getElementById('dialog_iframe');
-            frame.contentWindow.postMessage($(parent.window).width(), domainApp);
+            frame.contentWindow.postMessage($(parent.window).width(), appDomain);
         }
         else {
             $('#dialog_iframe').css('width', '460px');
@@ -146,7 +146,7 @@ $('body').on('click', '.fb_dialog', function (e) {
             $('#dialog_iframe').css('max-height', '100%');
             // init message card getstarted
             var frame = document.getElementById('dialog_iframe');
-            frame.contentWindow.postMessage('init', domainApp);
+            frame.contentWindow.postMessage('init', appDomain);
         }, 200)
     }
     else if ($("#dialog_iframe").hasClass("fb_customer_chat_bounce_in_v2")) { // nếu đang mở
@@ -168,7 +168,7 @@ eventer(messageEvent, function (e) {
     var data = e[key];
     //console.log(e.data)
     //console.log(e.origin)
-    //console.log(domainApp)
+    //console.log(appDomain)
     if (e.data == 'close') {
         // có tín hiệu đóng
         $('#dialog_iframe').css('max-height', '0px');

@@ -9,6 +9,8 @@ using BotProject.Web.Infrastructure.Log4Net;
 using System.Linq;
 using BotProject.Common;
 using System.Data.SqlClient;
+using BotProject.Data.Repositories;
+using Microsoft.AspNet.SignalR.Hubs;
 
 namespace BotProject.Web.SignalRChat
 {
@@ -19,7 +21,6 @@ namespace BotProject.Web.SignalRChat
         private const string USER_CUSTOMER = "customer";
         private const string USER_AGENT = "agent";
         private const string USER_BOT = "bot";
-
 
         private string _connectionID = "";
 
@@ -35,6 +36,7 @@ namespace BotProject.Web.SignalRChat
             _userManager = ServiceFactory.GetService<ApplicationUserManager>();
             _chatCommonService = ServiceFactory.GetService<IChatCommonSerivce>();
         }
+
 
         /// <summary>
         /// Khách hàng kết nối chat tới tổng đài viên
@@ -55,6 +57,7 @@ namespace BotProject.Web.SignalRChat
                 customerDb.ConnectedDate = DateTime.Now;
                 _customerService.Update(customerDb);
                 _customerService.Save();
+
                 // Kiểm tra customer tồn tại trong thread chat chưa
                 var threadParticipantExits = _chatCommonService.CheckCustomerInThreadParticipant(customerId);
                 if (threadParticipantExits != null)
@@ -136,46 +139,46 @@ namespace BotProject.Web.SignalRChat
             _context.Clients.Group(threadId, arrExcludeUserConnectionId).receiveSingalChatWithBot(channelGroupId, threadId, customerId, botId, isTransfer);
         }
 
-        public void ConnectAgentToListCustomer(string agentId, long channelGroupId)
-        {
-            _connectionID = Context.ConnectionId;
+        //public void ConnectAgentToListCustomer(string agentId, long channelGroupId)
+        //{
+        //    _connectionID = Context.ConnectionId;
 
-            var agentDb = _userManager.FindById(agentId);
-            agentDb.ConnectionID = _connectionID;
-            agentDb.StatusChatValue = CommonConstants.USER_ONLINE;
-            _userManager.Update(agentDb);
+        //    var agentDb = _userManager.FindById(agentId);
+        //    agentDb.ConnectionID = _connectionID;
+        //    agentDb.StatusChatValue = CommonConstants.USER_ONLINE;
+        //    _userManager.Update(agentDb);
 
-            // kết nối tới channelGroup
-            // agent tham gia kênh
-            _context.Groups.Add(_connectionID, channelGroupId.ToString());
+        //    // kết nối tới channelGroup
+        //    // agent tham gia kênh
+        //    _context.Groups.Add(_connectionID, channelGroupId.ToString());
 
-            try
-            {
-                string filter = "tp.ChannelGroupID = " + channelGroupId + " and c.StatusChatValue = 200";
-                var lstCustomerOnline = _chatCommonService.GetCustomerJoinChatByChannelGroupID(filter, "", 1, Int32.MaxValue, null).ToList();
-                if (lstCustomerOnline != null && lstCustomerOnline.Count() != 0)
-                {
-                    foreach (var customer in lstCustomerOnline)
-                    {
-                        // kết nối tới từng customer
-                        _context.Groups.Add(_connectionID, customer.ThreadID.ToString());
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                BotLog.Error(ex.StackTrace + ex.Message);
-            }
-        }
+        //    try
+        //    {
+        //        string filter = "tp.ChannelGroupID = " + channelGroupId + " and c.StatusChatValue = 200";
+        //        var lstCustomerOnline = _chatCommonService.GetCustomerJoinChatByChannelGroupID(filter, "", 1, Int32.MaxValue, null).ToList();
+        //        if (lstCustomerOnline != null && lstCustomerOnline.Count() != 0)
+        //        {
+        //            foreach (var customer in lstCustomerOnline)
+        //            {
+        //                // kết nối tới từng customer
+        //                _context.Groups.Add(_connectionID, customer.ThreadID.ToString());
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        BotLog.Error(ex.StackTrace + ex.Message);
+        //    }
+        //}
 
         public void ConnectAgentToChannelChat(string agentId, long channelGroupId)
         {
             _connectionID = Context.ConnectionId;
-            var agentDb = _userManager.FindById(agentId);
-            agentDb.ConnectionID = _connectionID;
-            agentDb.StatusChatValue = CommonConstants.USER_ONLINE;
-            _userManager.Update(agentDb);
-
+            //var agentDb = _userManager.FindById(agentId);
+            //agentDb.ConnectionID = _connectionID;
+            //agentDb.StatusChatValue = CommonConstants.USER_ONLINE;
+            //_userManager.Update(agentDb);
+            OnchangeStatusAgentOnline(agentId, _connectionID);
             // agent tham gia kênh
             _context.Groups.Add(_connectionID, channelGroupId.ToString());
         }
@@ -270,6 +273,19 @@ namespace BotProject.Web.SignalRChat
             sqlConnection.Close();
         }
 
+        public void OnchangeStatusAgentOnline(string agentId, string connectionId)
+        {
+            var sqlConnection = new SqlConnection(_sqlConnection);
+            sqlConnection.Open();
+            
+            SqlCommand command2 = new SqlCommand("UPDATE ApplicationUsers SET StatusChatValue = @statusCode,ConnectionID = @connectionId Where Id = @agentId", sqlConnection);
+            command2.Parameters.AddWithValue("@statusCode", 200);
+            command2.Parameters.AddWithValue("@agentId", agentId);
+            command2.Parameters.AddWithValue("@connectionId", connectionId);
+            command2.ExecuteNonQuery();
+            sqlConnection.Close();
+        }
+
         public override Task OnConnected()
         {
             return base.OnConnected();
@@ -295,10 +311,10 @@ namespace BotProject.Web.SignalRChat
 
         public void OnDisconnectedCustomer(string agentId, long channelGroupId)
         {
-            var agentDb = _userManager.FindById(agentId);
-            agentDb.StatusChatValue = CommonConstants.USER_OFFLINE;
-            _userManager.Update(agentDb);
-            _context.Clients.Group(channelGroupId.ToString()).getStatusAgentOffline(agentId);
+            //var agentDb = _userManager.FindById(agentId);
+            //agentDb.StatusChatValue = CommonConstants.USER_OFFLINE;
+            //_userManager.Update(agentDb);
+            //_context.Clients.Group(channelGroupId.ToString()).getStatusAgentOffline(agentId);
         }
     }
 }

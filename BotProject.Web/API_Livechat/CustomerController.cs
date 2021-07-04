@@ -57,15 +57,19 @@ namespace BotProject.Web.API_Livechat
                     customerDb.StatusChatValue = CommonConstants.USER_ONLINE;
                     _customerService.Create(customerDb);
 
-                    // Set Name
-                    AttributePlatformUser attPlatformUser = new AttributePlatformUser();
-                    attPlatformUser.UserID = customerVm.ID;
-                    attPlatformUser.BotID = customerVm.BotID;
-                    attPlatformUser.AttributeKey = "sender_name";
-                    attPlatformUser.AttributeValue = customerVm.Name;
-                    attPlatformUser.TypeDevice = "Web";
-                    _attributeService.CreateUpdateAttributePlatform(attPlatformUser);
-                    _attributeService.Save();
+                    if(customerVm.BotID != null)
+                    {
+                        // Set Name
+                        AttributePlatformUser attPlatformUser = new AttributePlatformUser();
+                        attPlatformUser.UserID = customerVm.ID;
+                        attPlatformUser.BotID = customerVm.BotID ?? default(int);
+                        attPlatformUser.AttributeKey = "sender_name";
+                        attPlatformUser.AttributeValue = customerVm.Name;
+                        attPlatformUser.TypeDevice = "Web";
+                        _attributeService.CreateUpdateAttributePlatform(attPlatformUser);
+                        _attributeService.Save();
+                    }
+
 
                     if (deviceVm != null)
                     {

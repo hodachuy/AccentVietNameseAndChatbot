@@ -259,14 +259,14 @@ var msgEvent = {
     getMessageAccentVN: function (text) {
         var rs = "";
         $.ajax({
-            url: "https://bot.digipro.vn/" + api.getAccentVN + '?text=' + text,//"https://bot.digipro.vn/"
+            url: "http://bot.lawcoviet.vn/" + api.getAccentVN + '?text=' + text,//"https://bot.digipro.vn/"
             contentType: 'application/json; charset=utf-8',
             type: 'GET',
             async: false,
             global: false,
             dataType: "json",
         }).done(function (response) {
-            //console.log(response)
+            console.log(response)
             if (response == "ERROR_400") {
                 //console.log("Load data accent vietnamese not success")
                 return rs;

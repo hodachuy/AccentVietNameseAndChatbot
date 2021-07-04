@@ -176,8 +176,8 @@ namespace BotProject.Web.API
                 //}
 
 
-                var lstAIML = _aimlFileService.GetByBotId(botId);
-                var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFile>, IEnumerable<AIMLViewModel>>(lstAIML);
+                var lstAIML = _aimlFileService.GetActiveByBotId(botId);
+                var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFileViewModel>, IEnumerable<AIMLViewModel>>(lstAIML);
                 _botService.loadAIMLFromDatabase(lstAIMLVm);
                 string _userId = Guid.NewGuid().ToString();
                 _user = _botService.loadUserBot(_userId);
@@ -219,8 +219,8 @@ namespace BotProject.Web.API
 
                 if (settingVm.CardID.HasValue)
                 {
-                    var lstAIML = _aimlFileService.GetByBotId(botId);
-                    var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFile>, IEnumerable<AIMLViewModel>>(lstAIML);
+                    var lstAIML = _aimlFileService.GetActiveByBotId(botId);
+                    var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFileViewModel>, IEnumerable<AIMLViewModel>>(lstAIML);
                     _botService.loadAIMLFromDatabase(lstAIMLVm);
                     string _userId = Guid.NewGuid().ToString();
                     _user = _botService.loadUserBot(_userId);

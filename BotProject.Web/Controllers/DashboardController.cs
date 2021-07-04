@@ -28,10 +28,12 @@ namespace BotProject.Web.Controllers
 
         public ActionResult Index()
         {
-            if(UserInfo == null)
+
+            if (UserInfo == null || (UserInfo != null && UserInfo.Groups == null))
             {
                 return RedirectToAction("Login", "Account");
             }
+
             var lstBot = _botService.GetListBotDashboard(UserInfo.Id);
             var lstBotViewModel = Mapper.Map<IEnumerable<StoreProcBotViewModel>, IEnumerable<BotViewModel>>(lstBot);
             if(lstBotViewModel.Count() != 0)
@@ -53,11 +55,6 @@ namespace BotProject.Web.Controllers
         [ChildActionOnly]
         public ActionResult Header()
         {
-            if (UserInfo == null || (UserInfo != null && UserInfo.Groups == null))
-            {
-                return RedirectToAction("Login", "Account");
-            }
-
             return PartialView(UserInfo);
         }
 

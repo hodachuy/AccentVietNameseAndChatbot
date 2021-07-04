@@ -17,6 +17,7 @@ namespace BotProject.Service.Livechat
         Message AddMessage(Message msg);
         IEnumerable<Conversation> GetListConversation(long threadId);
         IEnumerable<SP_ConversationMessage> GetListConversationMessage(string filter, string sort, int pageNumber, int pageSize, long? selectedID);
+        void Save();
     }
     public class ConversationService : IConversationService
     {
@@ -49,6 +50,11 @@ namespace BotProject.Service.Livechat
         public IEnumerable<SP_ConversationMessage> GetListConversationMessage(string filter, string sort, int pageNumber, int pageSize, long? selectedID)
         {
             return _conversationRepository.GetListConversationMessage(filter, sort, pageNumber, pageSize, selectedID);
+        }
+
+        public void Save()
+        {
+            _unitOfWork.Commit();
         }
     }
 }

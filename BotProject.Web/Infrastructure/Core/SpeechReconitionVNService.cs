@@ -15,7 +15,7 @@ namespace BotProject.Web.Infrastructure.Core
 {
     public class SpeechReconitionVNService
     {
-        private readonly static string keySpeechRec = Helper.ReadString("KeySpeechReconition");
+        private readonly static string _keySpeechRec = Helper.ReadString("KeySpeechReconition");
 
         public static async Task<string> ConvertSpeechToText(string fileAudio)
         {
@@ -30,7 +30,7 @@ namespace BotProject.Web.Infrastructure.Core
                     client.BaseAddress = new Uri("https://api.openfpt.vn/");
                     client.DefaultRequestHeaders.Accept.Clear();
                     client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    client.DefaultRequestHeaders.Add("api_key", keySpeechRec);
+                    client.DefaultRequestHeaders.Add("api_key", _keySpeechRec);
                     client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Taco2) Gecko/20100101");
 
                     WebClient web = new WebClient();
@@ -44,14 +44,13 @@ namespace BotProject.Web.Infrastructure.Core
                         //BotLog.Error("ConvertSpeechToText Result: " + result);
                         result = HttpUtility.HtmlDecode(result);                       
                     }
-                    return result;
                 }
             }
             catch(Exception ex)
             {
-                BotLog.Error("ConvertSpeechToText ERROR" + ex.Message);
-                return result;
+                BotLog.Error(ex.Message);
             }
+            return result;
         }
     }
 }

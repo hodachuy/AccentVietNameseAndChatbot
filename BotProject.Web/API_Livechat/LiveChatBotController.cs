@@ -156,12 +156,12 @@ namespace BotProject.Web.API_Livechat
 					return response;
 				}
 
-				//var settingDb = _settingService.GetSettingByBotID(botId);
-				//var systemConfig = _settingService.GetListSystemConfigByBotId(botId);
-				//var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
+                //var settingDb = _settingService.GetSettingByBotID(botId);
+                //var systemConfig = _settingService.GetListSystemConfigByBotId(botId);
+                //var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
 
-                var lstAIML = _aimlFileService.GetByBotId(botId);//_aimlFileService.GetByBotId(botID);
-                var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFile>, IEnumerable<AIMLViewModel>>(lstAIML);
+                var lstAIML = _aimlFileService.GetActiveByBotId(botId);
+                var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFileViewModel>, IEnumerable<AIMLViewModel>>(lstAIML);
                 _botService.loadAIMLFromDatabase(lstAIMLVm);
 
                 _user = _botService.loadUserBot(message.senderId);

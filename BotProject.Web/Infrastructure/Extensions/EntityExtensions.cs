@@ -336,7 +336,7 @@ namespace BotProject.Web.Infrastructure.Extensions
         }
         #endregion
 
-        #region Customer
+        #region Livechat
         public static void UpdateCustomer(this Customer customer, CustomerViewModel customerVm)
         {
             customer.ID = customerVm.ID;
@@ -350,8 +350,6 @@ namespace BotProject.Web.Infrastructure.Extensions
             customer.ConnectedDate = DateTime.Now;
             customer.StatusChatValue = customerVm.StatusChatValue;
         }
-        #endregion
-        #region Device
         public static void UpdateDevice(this Device device, DeviceViewModel deviceVm)
         {
             device.ID = deviceVm.ID;
@@ -368,8 +366,6 @@ namespace BotProject.Web.Infrastructure.Extensions
             device.Region = deviceVm.Region;
             device.Timezone = deviceVm.Timezone;
         }
-        #endregion
-
-       
+        #endregion    
     }
 }

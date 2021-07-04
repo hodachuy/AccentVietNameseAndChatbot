@@ -19,7 +19,7 @@ namespace BotProject.Web.Models.Livechat
         public int StatusChatValue { set; get; }
         public DateTime CreatedDate { set; get; }
         public DateTime? LogoutDate { set; get; }
-        public int BotID { set; get; }
+        public int? BotID { set; get; }
         public virtual IEnumerable<DeviceViewModel> Devices { set; get; }
     }
     public class DeviceViewModel

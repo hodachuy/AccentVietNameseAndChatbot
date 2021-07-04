@@ -114,7 +114,7 @@
 <input type="hidden" id="botId" value="@Model.BotID" />
 <input type="hidden" id="formQnaID" value="@Model.ID" />
 <input type="hidden" id="formAlias" value="@Model.Alias" />
-
+<input type="hidden" id="botName" value="@ViewBag.BotName"/>
 <style>
     /* The container */
     .containerChk {
@@ -182,7 +182,7 @@
         -webkit-transform: rotate(45deg);
         -ms-transform: rotate(45deg);
         transform: rotate(45deg);
-    }
+    }  
 </style>
 
 <div class="container-fluid">
@@ -191,12 +191,18 @@
             <div class="d-flex" style="border-bottom: 1px solid #e6e6f2;">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><i class="fa fa-home" href="javascript:void(0)">@ViewBag.BotName</i></li>
-                    <li class="breadcrumb-item">Huấn luyện bot</li>
-                    <li class="breadcrumb-item active">@Model.Name</li>
+                    <li class="breadcrumb-item">Tri thức bot</li>
                 </ol>
                 <div class="toolbar ml-auto p-r-10 p-t-10">
-                    <a href="#" class="btn btn-success btn-sm saveKeyword"><i class="fas fa-sync-alt"></i> Lưu toàn bộ tri thức</a>
-                    @*<a href="#" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Publish</a>*@
+                    <a href="#" class="btn btn-success btn-sm saveKeyword"><i class="fas fa-sync-alt"></i> Lưu tri thức</a>
+                    <a href="#" class="btn btn-dark btn-sm rmQnA"><i class="fas fa-trash"></i> Xóa</a>
+                </div>
+            </div>
+            <div class="d-flex">
+                <div class="form-group">
+                    <div class="col-md-12 form-qna-title">
+                        <input type="text" maxlength="240" class="text-semibold text-uppercase titleBlock titleFormQnA" value="@Model.Name" data="@Model.Name">
+                    </div>
                 </div>
             </div>
             <div class="d-flex">
@@ -211,18 +217,12 @@
             </div>
         </div>
         <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12 pageheader-title">
-            @*<div class="d-flex">
-                    <h5 class="pageheader-title">@Model.Name.ToUpper() </h5>
-                    <div class="toolbar ml-auto p-r-10">
-                        <a href="#" class="btn btn-success btn-sm saveKeyword"><i class="fas fa-sync-alt"></i> Save and retrain</a>
-                        <a href="#" class="btn btn-primary btn-sm"><i class="fas fa-upload"></i> Publish</a>
-                    </div>
-                </div>*@
+
             <div class="d-flex">
                 <p style="font-size:13pt;padding-left:20px;color:darkblue;" id="search-label" for="search-terms" class="addCt"><i class="fas fa-plus-circle"></i> <span style="padding-left:5px;text-decoration:underline">Thêm kịch bản</span></p>
                 <div class="ml-auto" style="font-size:13px;padding-right:100px">
                     @if (Model.Status == true)
-            {
+                    {
                         <label class="containerChk">
                             <span style="margin-right:10px">Kích hoạt</span>
                             <input type="checkbox" id="statusFormQnA" value="true" checked>
@@ -373,6 +373,6 @@
             }
         });
     </script>
-    <script src="~/assets/client/js/eventBot/form-learning-qna.js"></script>
+    <script src="~/assets/client/js/eventBot/form-learning-qna.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/client/js/eventBot/form-learning-qna.js")).ToString("HHmmssfff")"></script>
 }
 

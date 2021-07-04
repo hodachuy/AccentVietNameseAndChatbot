@@ -749,5 +749,25 @@
             }
         })
     </script>
+    <!--Lacviet-->
+    <script>
+        (function (l, a, c, v, i, e, t) {
+            t = new Date().getUTCMilliseconds().toString();
+            c += t;
+            i = l.createElement('script');
+            var ii = l.getElementsByTagName('script')[0];
+            r = false;
+            i.async = 1;
+            i.src = c;
+            i.id = 'lacviet-script';
+            ii.parentNode.insertBefore(i, ii);
+            i.onload = i.onreadystatechange = function () {
+                if (!r && (!this.readyState || this.readyState == 'complete')) {
+                    r = true; e();
+                }
+            };
+        })(document, window, 'http://bot.lawcoviet.vn/assets/livechat/app_setting.js?v=', 'lacviet', '', function () { lacviet.setup('2') });
+    </script>
+    <!-- End Lacviet -->
 
 }

@@ -1,4 +1,4 @@
-﻿//---------------------------- TRACKING CUSTOMER ----------------------------//
+﻿//---------------------------- TRACKING CUSTOMER IP,OS, BROWSER ----------------------------//
 (function (window) {
     {
         var unknown = '-';
@@ -211,10 +211,24 @@
     }
 
 }(this));
-
+console.log(
+    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
+    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
+    ' (' + jscd.browserVersion + ')\n' +
+    'Mobile: ' + jscd.mobile + '\n' +
+    'Flash: ' + jscd.flashVersion + '\n' +
+    'Cookies: ' + jscd.cookies + '\n' +
+    'Screen Size: ' + jscd.screen + '\n\n' +
+    'Full User Agent: ' + navigator.userAgent + '\n\n' +
+    'IP: ' + ipInfo.ip + '\n' +
+    'City: ' + ipInfo.city + '\n' +
+    'Region: ' + ipInfo.region + '\n' +
+    'Latitude: ' + ipInfo.latitude + '\n' +
+    'Longtitude: ' + ipInfo.longtitude
+);
 /*
     Hiển thị khoản thời gian so với thời gian hiện tại
-    Ví dụ:
+    Ví dụ sử dụng:
     Input:
     <abbr class="timeago" title="2020-04-17T09:24:17Z">2011-12-17T09:24:17Z1</abbr>
     <abbr class="timeago" title="December 17, 2015">December 17, 201o</abbr>
@@ -443,6 +457,7 @@ function returnIcon(code, positionX, positionY) {
     var imageIcon = '<img src="' + _Host + 'assets/client/libs/emoji-picker/img/blank.gif" class="img" style="display:inline-block;width:25px;height:25px;background:url(' + "'" + _Host + "assets/client/libs/emoji-picker/img/emoji_spritesheet_0.png'" + ') ' + positionX + 'px ' + positionY + 'px no-repeat;background-size:675px 175px;" alt="' + code + '">';
     return imageIcon
 }
+
 
 
 /*

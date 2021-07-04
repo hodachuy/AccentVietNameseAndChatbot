@@ -68,8 +68,8 @@
                         </div>
                     </div>
                 </div>
-                <div class="header-body">
-                    Healthcare Chatbot
+                <div class="header-body" id="header-title">
+                    @*Healthcare Chatbot*@
                 </div>
                 <div class="header-right">
                     <div class="mr-auto">
@@ -591,6 +591,17 @@
     <script src="~/Scripts/jquery.signalR-2.2.2.js"></script>
     <script src="~/signalr/hubs"></script>
     <script src="~/assets/livechat/js/helper/lc_common.js"></script>
-    <script src="~/assets/livechat/js/lc_chatbox.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/js/lc_chatbox.js")).ToString("HHmmssfff")"></script>
+    @if (channelGroupId == 5041)
+    {
+        <script src="~/assets/livechat/js/lc_chatbox_legal.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/js/lc_chatbox_legal.js")).ToString("HHmmssfff")"></script>
+    }
+    else if (channelGroupId == 3019)
+    {
+        <script src="~/assets/livechat/js/lc_chatbox.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/js/lc_chatbox.js")).ToString("HHmmssfff")"></script>
+    }
+    else
+    {
+        <script src="~/assets/livechat/js/lv_livechat.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/js/lv_livechat.js")).ToString("HHmmssfff")"></script>
+    }
 </body>
 </html>

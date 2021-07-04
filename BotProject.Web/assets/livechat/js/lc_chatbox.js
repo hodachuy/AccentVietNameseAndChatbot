@@ -15,12 +15,12 @@ console.log(
     'Longtitude: ' + ipInfo.longtitude
 );
 
-var CustomerModel = {    
+var CustomerModel = {
     ID: _customerId,
     ApplicationChannels: 0, //[0: Web, 1: Facebook, 2: Zalo, 3: Kiosk]
     ChannelGroupID: _channelGroupId,
     ThreadID: '',
-    BotID:'',
+    BotID: '',
     Name: window.sessionStorage.getItem("lc_CustomerName") || '',
     Phone: window.sessionStorage.getItem("lc_CustomerPhone") || '',
     Email: window.sessionStorage.getItem("lc_CustomerEmail") || ''
@@ -75,11 +75,13 @@ var objHub = $.connection.chatHub;
 $(function () {
     //check agent online
     setting.isAgentOnline = checkAgentOnline();
-
+    setting.BotID = checkBotActive().botId;
+    $("#header-title").html('Chatbot');
     // Init bot Y tế cho demo
     if (!setting.isAgentOnline) {
         setting.isTransferToBot = true;
         setting.BotID = '3019';
+        $("#header-title").html('Healthcare Chatbot');
     }
 });
 
@@ -216,17 +218,21 @@ var cBoxHub = {
             console.log('disconnected')
         }
         window.addEventListener("offline",
-		  () => console.log("No Internet")
-		);
+            () => console.log("No Internet")
+        );
         window.addEventListener("online", function () {
             console.log("Connected Interned")
             $(".box-disconected").removeClass('showing');
             $('.box-reconecting').addClass('showing');
             reconnectingTime.start();
 
-           // intervalReconnectId = setInterval(varyReconnected, 1500);
+            // intervalReconnectId = setInterval(varyReconnected, 1500);
             setTimeout(function () {
                 console.log('SingalR connect đang khởi động lại')
+
+                // demo bỏ qua setting.isAgentOnline == true
+                $(".chat-footer").show();
+
                 $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
                 $.connection.hub.start().done(function () {
                     // kết nối chat khi agent hoặc bot active
@@ -266,7 +272,7 @@ var cBoxHub = {
                 console.log('agentId-' + agentId + ' typing')
             }
         };
-        objHub.client.receiveThreadChat = function (threadId, customerId) {
+        objHub.client.receiveThreadChat = function (threadId, customerId, conversationId) {
             console.log('revice- thread' + threadId)
             CustomerModel.ThreadID = threadId;
         };
@@ -426,9 +432,9 @@ var cBoxMessage = {
         $("body").on('click', '.btn_next_genetics', function () {
             var $form = $(this).closest('.message-item-genetics'),
                 currentIndex = $form.find($('div.message-container')).attr('index');
-                minIndex = (parseInt(currentIndex) + 1),
+            minIndex = (parseInt(currentIndex) + 1),
                 maxIndex = $form.find($('div.message-item-template-generic')).length - 1;
-                $form.find($('div.message-container')).attr('index', minIndex);
+            $form.find($('div.message-container')).attr('index', minIndex);
 
             var widthByItem = -272 * minIndex,
                 withScroll = '' + widthByItem + 'px';
@@ -720,6 +726,10 @@ var messageBot = {
                                 let tempImage = new messageBot.renderTemplate(date_current, '').Image(value.message.attachment.payload.url);
                                 lstTemplateHtml.push(tempImage);
                             }
+                            if (value.message.attachment.type == "file") {
+                                let tempFile = new messageBot.renderTemplate(date_current, '').File(value.message.attachment.payload.url);
+                                lstTemplateHtml.push(tempFile);
+                            }
                             if (value.message.attachment.type == "template") {
                                 if (value.message.attachment.payload.template_type == "button") {
                                     let text = value.message.attachment.payload.text;
@@ -782,7 +792,7 @@ var messageBot = {
             $(this).append($(text).addClass('animated moveUp')).append(scrollBar());
             if (isSendTyping) {
                 new messageBot.renderTemplate('', '').Typing();
-            } 
+            }
             objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.BOT);
 
             next();
@@ -837,83 +847,112 @@ var messageBot = {
             tmpText += '</div>';
             $('#message-content').append(tmpText);//$('#message-content').append(tmpText).append(scrollBar())
         },
-        this.Text = function (text) {
-            var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
-            tmpText += messageBot.getIcon('');
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
+            this.Text = function (text) {
+                var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
+                tmpText += messageBot.getIcon('');
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "3019") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content">' + text + '</div>';
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.File = function (urlFile) {
+                let iconFile = '<i style="color:#007bff" class="fa fa-file"></i>';
+                let host = _Host + "File/Document/";
+                let fileName = urlFile.replace(host, "");
+                let fileExtension = fileName.split('.').pop();
+                if (fileExtension == "docx" || fileExtension == "doc") {
+                    iconFile = '<i style="color:#007bff" class="fa fa-file-word"></i>';
+                }
+
+                if (fileExtension == "pdf") {
+                    iconFile = '<i style="color:red" class="fa fa-file-pdf"></i>';
+                }
+
+                var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
+                tmpText += messageBot.getIcon('');
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content"> ' + iconFile + ' <a href="' + urlFile + '"> ' + fileName + '</a></div>';
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.Image = function (urlImage) {
+                var tmpText = '<div class="message-item {bot} message-item-image clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "3019") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <img src="' + urlImage + '"/>';//' + _Host + '
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.TextAndButton = function (text, calbackButton) {
+                var tmpText = '<div class="message-item {bot} message-item-text-button clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "3019") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content">';
+                tmpText += '<span>' + text + '</span>';
+                tmpText += calbackButton();
                 tmpText += '                    </div>';
-            }
-            tmpText += '                    <div class="message-item-content">' + text + '</div>';
-            tmpText += '                </div>';
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.Image = function (urlImage) {
-            var tmpText = '<div class="message-item {bot} message-item-image clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
-            tmpText += '                    <img src="' + urlImage + '"/>';//' + _Host + '
-            tmpText += '                </div>';
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.TextAndButton = function (text, calbackButton) {
-            var tmpText = '<div class="message-item {bot} message-item-text-button clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
-            tmpText += '                    <div class="message-item-content">';
-            tmpText += '<span>' + text + '</span>';
-            tmpText += calbackButton();
-            tmpText += '                    </div>';
-            tmpText += '  </div>';
-            tmpText += '  </div>';
-            return tmpText;
-        },
-        this.ContainerGeneric = function (templateGenericIndex, genericTotal) {
-            var tmpText = '<div class="message-item {bot} message-item-genetics clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '     <div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
+                tmpText += '  </div>';
+                tmpText += '  </div>';
+                return tmpText;
+            },
+            this.ContainerGeneric = function (templateGenericIndex, genericTotal) {
+                var tmpText = '<div class="message-item {bot} message-item-genetics clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '     <div class="message-body">';
+                if (setting.BotID != "3019") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
 
 
 
-            tmpText += '                <div class="message-container" index="0">';//style="padding-top:15px;"
-            tmpText += '                                   <div class="message-template" style="left: 0;position: relative;transition: left 500ms ease-out;white-space: nowrap; display: flex; width: 100%; flex-direction: row;">';
-            tmpText += templateGenericIndex;
-            tmpText += '                                   </div>';
-            tmpText += '                </div>';
-            tmpText += '     </div>';
-            if (genericTotal > 1) {
-                tmpText += ` <a class="btn_back_genetics _32rk _32rg _1cy6" href="#" style="display: none;">
+                tmpText += '                <div class="message-container" index="0">';//style="padding-top:15px;"
+                tmpText += '                                   <div class="message-template" style="left: 0;position: relative;transition: left 500ms ease-out;white-space: nowrap; display: flex; width: 100%; flex-direction: row;">';
+                tmpText += templateGenericIndex;
+                tmpText += '                                   </div>';
+                tmpText += '                </div>';
+                tmpText += '     </div>';
+                if (genericTotal > 1) {
+                    tmpText += ` <a class="btn_back_genetics _32rk _32rg _1cy6" href="#" style="display: none;">
                                 <div direction="forward" class="_10sf _5x5_">
                                     <div class="_5x6d">
                                         <div class="_3bwv _3bww">
@@ -939,89 +978,89 @@ var messageBot = {
                                     </div>
                                 </div>
                             </a>`;
-            }
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.GenericIndex = function (generic, calbackButton) {
-            var tmpText = '<div class="message-item-template-generic">';
-            tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
-            tmpText += '                                </div>';
-            tmpText += '                                <div class="message-template-generic-container _6j2g">';
-            tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
-            tmpText += '                                        ' + generic.title + ''
-            tmpText += '                                    </div>';
-            tmpText += '                                    <div class="message-generic-subtitle _6j0u _4ik4">';
-            tmpText += '                                        <div>';
-            tmpText += '                                            ' + generic.subtitle + ''
-            tmpText += '                                        </div>';
-            tmpText += '                                    </div>';
-            tmpText += '                                    <div class="message-generic-sublink _6j0y _4ik4">';
-            tmpText += '                                        <a href="' + generic.item_url + '" target="_blank">';
-            tmpText += '                                            ' + generic.item_url + ''
-            tmpText += '                                        </a>';
-            tmpText += '                                    </div>';
-            tmpText += '                                </div>';
-            tmpText += calbackButton();
-            tmpText += '  </div>';
-            return tmpText;
-        },
-        this.Button = function (lstButton) {
-            var tmpText = '';
-            if (lstButton.length > 0) {
-                tmpText = '<div class="message-item-button">';
-                $.each(lstButton, function (index, value) {
-                    if (value.type == "postback") {
-                        tmpText += '<a class="message-btn-postback lc-6qcmqf" data-postback="' + value.payload + '">' + value.title + '</a>';
-                    }
-                    if (value.type == "web_url") {
-                        tmpText += '<a href="' + value.url + '" class="message-btn-link lc-6qcmqf" target="_blank">' + value.title + '</a>';
-                    }
-                })
+                }
                 tmpText += '</div>';
-            }
-            return tmpText;
-        },
-        this.QuickReply = function (lstQuickReply) {
-            var tmpText = '        <div class="message-quickreply clearfix">';
-            tmpText += '                <div class="message-quickreply-container">';
-            tmpText += '                    <div class="message-quickreply-item" style="position:relative;" index="2">';
-            $.each(lstQuickReply, function (index, value) {
-                tmpText += '                        <button value="0" class="btn-quickreply" data-postback="' + value.payload + '">' + value.title + '</button>';
-            })
-            tmpText += '                    </div>';
-            tmpText += '                </div>';
-            if (lstQuickReply.length > 3) {
-                tmpText += '                <a class="_32rk _32rg _1cy6  btn_back_quickreply" href="#" style="display: none;">';
-                tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
-                tmpText += '                        <div class="_5x6d">';
-                tmpText += '                            <div class="_3bwv _3bww">';
-                tmpText += '                                <div class="_3bwy">';
-                tmpText += '                                    <div class="_3bwx">';
-                tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG2 sx_c4c7bc" alt=""></i>';
+                return tmpText;
+            },
+            this.GenericIndex = function (generic, calbackButton) {
+                var tmpText = '<div class="message-item-template-generic">';
+                tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
+                tmpText += '                                </div>';
+                tmpText += '                                <div class="message-template-generic-container _6j2g">';
+                tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
+                tmpText += '                                        ' + generic.title + ''
+                tmpText += '                                    </div>';
+                tmpText += '                                    <div class="message-generic-subtitle _6j0u _4ik4">';
+                tmpText += '                                        <div>';
+                tmpText += '                                            ' + generic.subtitle + ''
+                tmpText += '                                        </div>';
+                tmpText += '                                    </div>';
+                tmpText += '                                    <div class="message-generic-sublink _6j0y _4ik4">';
+                tmpText += '                                        <a href="' + generic.item_url + '" target="_blank">';
+                tmpText += '                                            ' + generic.item_url + ''
+                tmpText += '                                        </a>';
                 tmpText += '                                    </div>';
                 tmpText += '                                </div>';
-                tmpText += '                            </div>';
-                tmpText += '                        </div>';
+                tmpText += calbackButton();
+                tmpText += '  </div>';
+                return tmpText;
+            },
+            this.Button = function (lstButton) {
+                var tmpText = '';
+                if (lstButton.length > 0) {
+                    tmpText = '<div class="message-item-button">';
+                    $.each(lstButton, function (index, value) {
+                        if (value.type == "postback") {
+                            tmpText += '<a class="message-btn-postback lc-6qcmqf" data-postback="' + value.payload + '">' + value.title + '</a>';
+                        }
+                        if (value.type == "web_url") {
+                            tmpText += '<a href="' + value.url + '" class="message-btn-link lc-6qcmqf" target="_blank">' + value.title + '</a>';
+                        }
+                    })
+                    tmpText += '</div>';
+                }
+                return tmpText;
+            },
+            this.QuickReply = function (lstQuickReply) {
+                var tmpText = '        <div class="message-quickreply clearfix">';
+                tmpText += '                <div class="message-quickreply-container">';
+                tmpText += '                    <div class="message-quickreply-item" style="position:relative;" index="2">';
+                $.each(lstQuickReply, function (index, value) {
+                    tmpText += '                        <button value="0" class="btn-quickreply" data-postback="' + value.payload + '">' + value.title + '</button>';
+                })
                 tmpText += '                    </div>';
-                tmpText += '                </a>';
-                tmpText += '                <a class="_32rk _32rh _1cy6  btn_next_quickreply" href="#" style="display: block;">';
-                tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
-                tmpText += '                        <div class="_5x6d">';
-                tmpText += '                            <div class="_3bwv _3bww">';
-                tmpText += '                                <div class="_3bwy">';
-                tmpText += '                                    <div class="_3bwx">';
-                tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG3 sx_dbbd74" alt=""></i>';
-                tmpText += '                                    </div>';
-                tmpText += '                                </div>';
-                tmpText += '                            </div>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-                tmpText += '                </a>';
-                tmpText += '            </div>';
+                tmpText += '                </div>';
+                if (lstQuickReply.length > 3) {
+                    tmpText += '                <a class="_32rk _32rg _1cy6  btn_back_quickreply" href="#" style="display: none;">';
+                    tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
+                    tmpText += '                        <div class="_5x6d">';
+                    tmpText += '                            <div class="_3bwv _3bww">';
+                    tmpText += '                                <div class="_3bwy">';
+                    tmpText += '                                    <div class="_3bwx">';
+                    tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG2 sx_c4c7bc" alt=""></i>';
+                    tmpText += '                                    </div>';
+                    tmpText += '                                </div>';
+                    tmpText += '                            </div>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                    tmpText += '                </a>';
+                    tmpText += '                <a class="_32rk _32rh _1cy6  btn_next_quickreply" href="#" style="display: block;">';
+                    tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
+                    tmpText += '                        <div class="_5x6d">';
+                    tmpText += '                            <div class="_3bwv _3bww">';
+                    tmpText += '                                <div class="_3bwy">';
+                    tmpText += '                                    <div class="_3bwx">';
+                    tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG3 sx_dbbd74" alt=""></i>';
+                    tmpText += '                                    </div>';
+                    tmpText += '                                </div>';
+                    tmpText += '                            </div>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                    tmpText += '                </a>';
+                    tmpText += '            </div>';
+                }
+                return tmpText;
             }
-            return tmpText;
-        }
     }
 }
 

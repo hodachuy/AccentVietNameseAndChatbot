@@ -250,7 +250,7 @@
 
 
 .chat-block .chat-content .messages .message-item .message-body {
-    /*display: flex;*/                 /*Custom tạm thời bot y tế*/
+    display: flex;                /*Custom tạm thời bot y tế*/
     flex-direction: column;
     align-items: flex-start;
     /*overflow: hidden;*/

@@ -175,5 +175,37 @@ namespace BotProject.Common.AppThird3PartyTemplate
                   },
               });
         }
+
+        public static Object GetMessageTemplateGenericByListMed(string sender, List<SearchSymptomViewModel> lstSearchNLP, string urlDetail = "")
+        {
+            return JObject.FromObject(
+              new
+              {
+                  recipient = new { user_id = sender },
+                  message = new
+                  {
+                      attachment = new
+                      {
+                          type = "template",
+                          payload = new
+                          {
+                              template_type = "list",
+                              elements = from q in lstSearchNLP
+                                         select new
+                                         {
+                                             title = q.description.Substring(0, 60) + "...",
+                                             subtitle = "FAQs",
+                                             image_url = ConfigHelper.ReadString("Domain") + "assets/images/medical-logo.jpg",
+                                             default_action = new
+                                             {
+                                                 type = "oa.open.url",
+                                                 url = ConfigHelper.ReadString("Domain") + "home/FaqMedSymptoms/" + q.id + "",
+                                             }
+                                         }
+                          }
+                      }
+                  },
+              });
+        }
     }
 }

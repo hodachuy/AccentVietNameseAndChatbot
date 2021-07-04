@@ -99,7 +99,7 @@ var cHub = {
         });
     },
     receivedSignalFromServer: function () {
-        objHub.client.receiveNewCustomerToAgent = function (channelGroupId, threadId, objCustomer) {
+        objHub.client.receiveNewCustomerToAgent = function (channelGroupId, threadId, objCustomer, conversationId) {
             // Kiểm tra tín hiệu trả về theo đúng kênh chat
             if (channelGroupId == _channelGroupId) {
                 // customer mới tham gia
@@ -146,7 +146,8 @@ var cHub = {
                         insertChat(typeUser, customerId, isValidURLandCodeIcon(message), userName, "");
                     }
                     if (typeUser == TYPE_USER_CONNECT.AGENT) {
-                        if (_agentId != agentId) { // nếu tài khoản hổ trợ vào được xem lun tin nhắn
+                        if (_agentId != agentId) {
+                            // nếu tài khoản hổ trợ vào được xem lun tin nhắn
                             insertChat(typeUser, customerId, isValidURLandCodeIcon(message), userName, "");
                         }
                     }
@@ -184,11 +185,9 @@ var cHub = {
         };
     }
 }
-
 var customerEvent = {
     getFormChat: function (objCustomer, threadId) {
         var isTyping = false;
-
         // lấy thông tin thiết bị khách hàng truy cập
         var renderFormDeviceInfo = function () {
             $("#chat-sidebar-device").show();
@@ -206,8 +205,6 @@ var customerEvent = {
                     initLatiLongMap(device.Latitude, device.Longtitude);
                 }
             }
-
-
             $('.chat-sidebar-content').niceScroll();
         }();
 

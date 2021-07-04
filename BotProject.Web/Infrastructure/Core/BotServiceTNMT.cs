@@ -10,12 +10,15 @@ using BotProject.Web.Models;
 using BotProject.Service;
 using System.Xml;
 using BotProject.Web.Infrastructure.Log4Net;
+using AutoMapper;
+using BotProject.Common.ViewModels;
+using BotProject.Model.Models;
 
 namespace BotProject.Web.Infrastructure.Core
 {
     sealed class BotServiceTNMT
     {
-        Bot _bot;
+        AIMLbot.Bot _bot;
         User _user;
         private IAIMLFileService _aimlFileService;
         private static BotServiceTNMT botInstance = null;
@@ -23,12 +26,15 @@ namespace BotProject.Web.Infrastructure.Core
         private string pathSetting = PathServer.PathAIML + "config";
         private BotServiceTNMT()
         {
-            _bot = new Bot();
+            _bot = new AIMLbot.Bot();
             _bot.isAcceptingUserInput = true;
             _bot.loadSettings(pathSetting);
             _aimlFileService = ServiceFactory.Get<IAIMLFileService>();
-            var lstAimlFile = _aimlFileService.GetByBotId(5036);
-            loadAIMLFromDatabase(lstAimlFile);
+            var lstAIML = _aimlFileService.GetActiveByBotId(5036);
+            var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFileViewModel>, IEnumerable<AIMLFile>>(lstAIML);
+
+            loadAIMLFromDatabase(lstAIMLVm);
+
             _user = loadUserBot(Guid.NewGuid().ToString());
         }
         public static BotServiceTNMT BotInstance

@@ -1,4 +1,5 @@
-﻿using BotProject.Data.Infrastructure;
+﻿using BotProject.Common.ViewModels;
+using BotProject.Data.Infrastructure;
 using BotProject.Data.Repositories;
 using BotProject.Model.Models;
 using System;
@@ -13,6 +14,7 @@ namespace BotProject.Service
     {
         AIMLFile GetByCardId(int cardId);
         IEnumerable<AIMLFile> GetByBotId(int botId);
+        IEnumerable<AIMLFileViewModel> GetActiveByBotId(int botId);
         IEnumerable<AIMLFile> GetByBotIdAndExcludeFormQnAnwer(int botId, int? formQnaID);
         IEnumerable<AIMLFile> GetAllByBotId(int botId);
         IEnumerable<AIMLFile> GetByUserId(string userId);
@@ -44,6 +46,10 @@ namespace BotProject.Service
         public IEnumerable<AIMLFile> GetByBotId(int botId)
         {
             return _aimlRepository.GetMulti(x => x.BotID == botId && x.Status == true);
+        }
+        public IEnumerable<AIMLFileViewModel> GetActiveByBotId(int botId)
+        {
+            return _aimlRepository.GetListAIMLFileActive(botId);
         }
 
         public IEnumerable<AIMLFile> GetByBotIdAndExcludeFormQnAnwer(int botId, int? formQnaID)

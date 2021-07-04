@@ -36,6 +36,8 @@ namespace BotProject.Web.API
         private IAttributeSystemService _attributeSystemService;
         private IAIMLFileService _aimlFileService;
 		private IChannelService _channelService;
+        private ApiQnaNLRService _apiNLR;
+
 
         private string[] _userSayStart = new string[]
         {
@@ -68,9 +70,28 @@ namespace BotProject.Web.API
             _aimlFileService = aimlFileService;
 			_channelService = channelService;
 
-		}	
+            _apiNLR = new ApiQnaNLRService();
 
-		[Route("getall")]
+
+        }
+
+        [Route("test")]
+        [HttpGet]
+        public HttpResponseMessage Test(HttpRequestMessage request, string content)
+        {
+            return CreateHttpResponse(request, () =>
+            {
+                HttpResponseMessage response;
+
+                var lstLegal = _apiNLR.GetRelatesLegalAndArticle(content);
+
+                response = request.CreateResponse(HttpStatusCode.OK, lstLegal);
+
+                return response;
+            });
+        }
+
+        [Route("getall")]
 		[HttpGet]
 		public HttpResponseMessage GetBotByUserID(HttpRequestMessage request, string userID)
 		{
@@ -84,9 +105,8 @@ namespace BotProject.Web.API
 				}
 
 				var lstBot = _botService.GetListBotByUserID(userID);
-
 				var lstBotVm = Mapper.Map<IEnumerable<Bot>, IEnumerable<BotViewModel>>(lstBot);
-                if (lstBotVm.Count() != 0)
+                if (lstBotVm.Any())
                 {
                     foreach (var item in lstBotVm)
                     {
@@ -244,10 +264,10 @@ namespace BotProject.Web.API
                     dynamic json = jsonData;
                     int botID = json.botId;
 
-                    var lstAIMLBotFiles = _aimlFileService.GetByBotId(botID);
+                    var lstAIMLBotFiles = _aimlFileService.GetActiveByBotId(botID);
 
                     var aimlBot = new AIMLbot.Bot();
-                    if (lstAIMLBotFiles.Count() != 0)
+                    if (lstAIMLBotFiles.Any())
                     {
                         foreach (var item in lstAIMLBotFiles)
                         {
@@ -320,7 +340,7 @@ namespace BotProject.Web.API
                     Setting settingDb = new Setting();
                     settingDb = _settingService.GetSettingByBotID(botParentID);
                     settingDb.BotID = botdB.ID;
-                    settingDb.Color = "rgb(75, 90, 148);";
+                    //settingDb.Color = settingDb.Color;//"rgb(75, 90, 148);";
                     settingDb.UserID = botdB.UserID;
                     settingDb.FormName = botName;
                     settingDb.PathCssCustom = "";
@@ -693,6 +713,7 @@ namespace BotProject.Web.API
                 return response;
             });
         }
+
         public void CreateAIMLFileByCardID(int cardId, string userId)
         {
             var card = _commonCardService.GetFullDetailCard(cardId);

@@ -61,23 +61,6 @@ namespace BotProject.Web.API
 
         }
 
-        [Route("test")]
-        [HttpGet]
-        public HttpResponseMessage test(HttpRequestMessage request, string phone, string msg)
-        {
-            return CreateHttpResponse(request, () =>
-            {
-                HttpResponseMessage response = null;
-
-                //string result = _hService.SendSms(phone, msg);
-
-                SendSmsService sm = new SendSmsService();
-                var y = sm.SendSmsMsg("0375348328", "12345 la ma OTP cua ban tu DIGIPRO");
-                response = request.CreateResponse(HttpStatusCode.OK, "y");
-                return response;
-            });
-        }
-
 
         [Route("getbyid")]
         [HttpGet]
@@ -137,22 +120,22 @@ namespace BotProject.Web.API
                 HttpResponseMessage response = null;
                 var lstCard = _cardService.GetListCardByBotID(botId);
                 var lstCardVm = Mapper.Map<IEnumerable<Card>, IEnumerable<CardViewModel>>(lstCard);
-                if(lstCardVm.Count() != 0)
-                {
-                    lstCardVm = lstCardVm.Select(x => new CardViewModel
-                    {
-                        ID = x.ID,
-                        Alias = x.Alias,
-                        Name = x.Name,
-                        IsDelete = x.IsDelete,
-                        Status = x.Status,
-                        IsHaveCondition = x.IsHaveCondition,
-                        IsConditionWithAreaButton = x.IsConditionWithAreaButton,
-                        UserID = x.UserID,
-                        BotID = x.BotID,
-                        GroupCardID = x.GroupCardID
-                    });
-                }
+                //if(lstCardVm.Any())
+                //{
+                //    lstCardVm = lstCardVm.Select(x => new CardViewModel
+                //    {
+                //        ID = x.ID,
+                //        Alias = x.Alias,
+                //        Name = x.Name,
+                //        IsDelete = x.IsDelete,
+                //        Status = x.Status,
+                //        IsHaveCondition = x.IsHaveCondition,
+                //        IsConditionWithAreaButton = x.IsConditionWithAreaButton,
+                //        UserID = x.UserID,
+                //        BotID = x.BotID,
+                //        GroupCardID = x.GroupCardID
+                //    });
+                //}
                 response = request.CreateResponse(HttpStatusCode.OK, lstCardVm);
                 return response;
             });

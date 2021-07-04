@@ -87,5 +87,41 @@ namespace BotProject.Web.API
 				return response;
 			});
 		}
-	}
+
+
+        [Route("update")]
+        [HttpPost]
+        public HttpResponseMessage Update(HttpRequestMessage request, FormQuestionAnswerViewModel formQnAVm)
+        {
+            return CreateHttpResponse(request, () =>
+            {
+                HttpResponseMessage response = null;
+
+                var formQnaDb = _qnaService.GetFormQnAnswerById(formQnAVm.ID);
+                formQnaDb.Name = formQnAVm.Name;
+                _qnaService.UpdateFormQuestionAnswer(formQnaDb);
+                _qnaService.Save();
+                response = request.CreateResponse(HttpStatusCode.OK);
+                return response;
+            });
+        }
+
+        [Route("delete")]
+        [HttpPost]
+        public HttpResponseMessage Delete(HttpRequestMessage request, FormQuestionAnswerViewModel formQnAVm)
+        {
+            return CreateHttpResponse(request, () =>
+            {
+                HttpResponseMessage response = null;
+
+                var formQnaDb = _qnaService.GetFormQnAnswerById(formQnAVm.ID);
+                formQnaDb.IsDelete = true;
+                formQnaDb.Status = false;
+                _qnaService.UpdateFormQuestionAnswer(formQnaDb);
+                _qnaService.Save();
+                response = request.CreateResponse(HttpStatusCode.OK, true);
+                return response;
+            });
+        }
+    }
 }

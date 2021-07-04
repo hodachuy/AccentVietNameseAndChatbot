@@ -53,6 +53,55 @@ $(document).ready(function () {
         new ActionFormQnA().GetQnAnswerById(1, pageSize);
     });
 
+    // Thay đổi tên form qna
+    $('body').on('change', '.titleFormQnA', function () {
+        var formName = $(this).val();
+        var params = {
+            Name: formName,
+            ID: $("#formQnaID").val(),
+            BotID:  $("#botId").val(),
+        };
+        params = JSON.stringify(params);
+        var urlQnA = "api/formqna/update";
+        var svr = new AjaxCall(urlQnA, params);
+        svr.callServicePOST(function (data) {
+            console.log(data)
+        });
+    })
+
+    // Xóa form qna
+    $('body').on('click', '.rmQnA', function (e) {
+         bootbox.confirm({
+             message: "Bạn có chắc muốn xóa nhóm tri thức này",
+             buttons: {
+                 confirm: {
+                     label: txtbt1,
+                     className: 'btn-primary'
+                 },
+                 cancel: {
+                     label: txtbt2,
+                     className: 'btn-default'
+                 }
+             },
+             callback: function (result) {
+                 if (result) {
+                     var params = {
+                         ID: $("#formQnaID").val(),
+                         BotID:  $("#botId").val(),
+                     };
+                     params = JSON.stringify(params);
+                     var urlQnADelete = "api/formqna/delete";
+                     var svr = new AjaxCall(urlQnADelete, params);
+                     svr.callServicePOST(function (data) {
+                         console.log(data)
+                         if (data) {
+                             window.location.href = _Host + "bot/setting/" + common.getSeoTitle($("#botName").val()) + "/" + $("#botId").val() + "?name=" + $("#botName").val();
+                         }
+                     });
+                 }
+             }
+         })
+     })
 
     //$('.selectKeyword').selectpicker();
     //$('.selectKeyword').on('show.bs.select', function (e) {
@@ -540,7 +589,6 @@ $(document).ready(function () {
             }
             return false;
         }
-
         // Validate Form
         var checkvalid = true;
         $('.wrap-content .panel-flat').each(function (index, el) {
@@ -609,7 +657,6 @@ $(document).ready(function () {
         } else {
             $('.titleLearning').parent().removeClass('has-error');
         }
-
         //$('.wrap-content .panel-flat').each(function (index, el) {
         //    if (!$(this).find('.randomText').is(':checked')) {
         //        $(this).find('.wrbutton .bt').not(":eq(0)").remove();
@@ -808,6 +855,10 @@ $(document).ready(function () {
                     confirmButtonColor: "#EF5350",
                     type: "success"
                 }, function () { $("#model-notify").modal('show'); });
+
+                // huấn luyện lại bot
+                $("#btnTrainingBot").trigger('click');
+
             } else {
                 swal({
                     title: "Thông báo",
@@ -817,6 +868,7 @@ $(document).ready(function () {
                 }, function () { $("#model-notify").modal('show'); });
             }
         });
+
     })
 })
 

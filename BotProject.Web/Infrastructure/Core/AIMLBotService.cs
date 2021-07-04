@@ -50,7 +50,15 @@ namespace BotProject.Web.Infrastructure.Core
         }
 
         public AIMLbot.Bot GetServerBot(string botId)
-        {           
+        {
+            bool hasAIMLBotService = _lstAIMLBot.Any(x => x.Item2.Equals(botId));
+            if (hasAIMLBotService == false) {
+                var aimlBot = new AIMLbot.Bot();
+                aimlBot.loadSettings(PathServer.PathAIML + "config");
+                aimlBot.isAcceptingUserInput = true;
+                _lstAIMLBot.Add(new Tuple<AIMLbot.Bot, string>(aimlBot, botId));
+                return aimlBot;
+            }
             return _lstAIMLBot.Where(x => x.Item2 == botId).FirstOrDefault().Item1;
         }
 

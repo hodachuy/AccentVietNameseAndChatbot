@@ -167,13 +167,15 @@ namespace BotProject.Service
 
         public IEnumerable<QuestionGroup> GetListQuesGroupToAimlByFormQnAnswerID(int formQnAnwerID)
         {
-            var lstQuesGroup = _quesGroupRepository.GetMulti(x => x.FormQuestionAnswerID == formQnAnwerID && x.IsKeyword == true).ToList();
-            if (lstQuesGroup.Count != 0)
+            //var lstQuesGroup = _quesGroupRepository.GetMulti(x => x.FormQuestionAnswerID == formQnAnwerID && x.IsKeyword == true).ToList();
+
+            var lstQuesGroup = _quesGroupRepository.GetMulti(x => x.FormQuestionAnswerID == formQnAnwerID);
+            if (lstQuesGroup.Any())
             {
                 foreach (var item in lstQuesGroup)
                 {
-                    item.Questions = _questionRepository.GetMulti(x => x.QuestionGroupID == item.ID).ToList();
-                    item.Answers = _answerRepository.GetMulti(x => x.QuestionGroupID == item.ID).ToList();
+                    item.Questions = _questionRepository.GetMulti(x => x.QuestionGroupID == item.ID);
+                    item.Answers = _answerRepository.GetMulti(x => x.QuestionGroupID == item.ID);
                 }
             }
             return lstQuesGroup;
@@ -211,7 +213,8 @@ namespace BotProject.Service
 
         public IEnumerable<StoreProcQuesGroupViewModel> GetListQuestionGroupByFormQnAnswerPagination(int formQnAnswerID, int page, int pageSize)
         {
-            string filter = "qg.FormQuestionAnswerID = " + formQnAnswerID + " and " + "qg.IsKeyword = " + 1;
+            //string filter = "qg.FormQuestionAnswerID = " + formQnAnswerID + " and " + "qg.IsKeyword = " + 1;
+            string filter = "qg.FormQuestionAnswerID = "+ formQnAnswerID ;
             var lstQuesGroup = _quesGroupRepository.GetListQuesGroup(filter,"",page, pageSize);
 
             //var lstQuesGroup = _quesGroupRepository.GetMulti(x => x.FormQuestionAnswerID == formQnAnswerID && x.IsKeyword == true).Skip((page - 1) * pageSize).Take(pageSize).ToList();

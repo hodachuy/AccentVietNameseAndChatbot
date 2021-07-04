@@ -218,28 +218,32 @@
                                             Copy and paste đoạn mã trước thẻ đóng <code class="css-n11q3w css-j0wqu90">&lt;/body&gt;</code> trên website của bạn.
                                             <div class="css-pmv0u9" tabindex="0">
                                                 <textarea id="txt-code" style="width:100%" readonly="" class="css-gikrn2 css-1nbw1t12">
-                                                    ---Thêm đoạn mã vào trang HTML - trong thẻ body---
                                                     <!--Lacviet-->
                                                     <script>
-       (function (l, a, c, v, i, e, t){
-         a[v] = a[v] || function (){
-         a[v].t =+ new Date();
-         (a[v].q = a[v].q || []).push(arguments);};
-         i = l.createElement('script');
-         var ii = l.getElementsByTagName('script')[0];
-         i.async = 1;
-         i.src = c;
-         i.id = 'lacviet-script';
-         ii.parentNode.insertBefore(i, ii);
-       })(document, window, 'https://bot.surelrn.vn/static/js/app.js', 'lacviet');
-       setTimeout(function(){lacviet.load('U2FsdGVkX18ubpSE6GDouyP2u43nbG0whHM+hExBRVqeaYOI6lQhGzLxrJEqDgjX','U2FsdGVkX1/2bMpgzB6hpP/CPtPgzC2ukR8BeFirfClAmqZdNCWxUsh40PI8I8wJtGrHFtfpuiUb9PGSAYf3cQ==','U2FsdGVkX18PvghrvS28/XaPnLUIG6rHSd3nAqeQiMw=','U2FsdGVkX1+gmewkMAXcW+kIM9G6smi/B3gH7glCz5o5lATqNElw9Jl5MqMPqpl1');},1500);
+                                                        (function (l, a, c, v, i, e, t) {
+                                                            t = new Date().getUTCMilliseconds().toString();
+                                                            c += t;
+                                                            i = l.createElement('script');
+                                                            var ii = l.getElementsByTagName('script')[0];
+                                                            r = false;
+                                                            i.async = 1;
+                                                            i.src = c;
+                                                            i.id = 'lacviet-script';
+                                                            ii.parentNode.insertBefore(i, ii);
+                                                            i.onload = i.onreadystatechange = function () {
+                                                                if (!r && (!this.readyState || this.readyState == 'complete')) {
+                                                                    r = true;
+                                                                    e();
+                                                                }
+                                                            };
+                                                        })(document, window, 'http://bot.lawcoviet.vn/assets/livechat/app_setting.js?v=', 'lacviet', '', function () { lacviet.setup('2') });
                                                     </script>
                                                     <!-- End Lacviet -->
                                                 </textarea>
                                                 <div class="css-2j9zgb css-1nbw1t13">
                                                     <button class="lc-btn lc-btn--primary lc-btn--compact" type="button">Copy code</button>
                                                 </div>
-                                                <div class="css-1ek6qwp css-1nbw1t10" onclick="copyToClipBoard(this)" onmouseover="hoverCopyToClipBoardChange(this)" onmouseout="hoverCopyToClipBoardNormal(this)">
+                                                <div class="css-1ek6qwp css-1nbw1t10" onclick="copyToClipBoard(this)" onmouseover="hoverCopyToClipBoardChange(this)" onmouseout="hoverCopyToClipBoardNormal(this)" style="display: inline-flex; text-align: center;">
                                                     <div class="css-1nbw1t11 css-uv22u3 css-j314r80" width="25px" height="25px" fill="#fff">
                                                         <svg fill="#fff" width="25px" height="25px" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"></path><path fill="inherit" d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm-1 4l6 6v10c0 1.1-.9 2-2 2H7.99C6.89 23 6 22.1 6 21l.01-14c0-1.1.89-2 1.99-2h7zm-1 7h5.5L14 6.5V12z"></path></svg>
                                                     </div>

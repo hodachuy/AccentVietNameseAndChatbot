@@ -514,8 +514,12 @@ namespace BotProject.Web.API_Webhook
                     Random rand = new Random();
                     string randomKey = keyList[rand.Next(keyList.Count)];
                     string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
-                    string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
-                        contentNotFound, senderId, _contactAdmin, _titlePayloadContactAdmin).ToString();
+
+                    //string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
+                    //    contentNotFound, senderId, _contactAdmin, _titlePayloadContactAdmin).ToString();
+
+                    string templateNotFound = FacebookTemplate.GetMessageTemplateText(contentNotFound, senderId).ToString();
+
                     await SendMessage(templateNotFound, senderId);
                 }
             }

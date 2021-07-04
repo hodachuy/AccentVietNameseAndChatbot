@@ -16,6 +16,7 @@ using Quartz;
 using Quartz.Impl;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
@@ -37,7 +38,7 @@ namespace BotProject.Web.API_Webhook
     /// http://developers.facebook.com
     /// ------------------------------
     /// Webhook nhận tín hiệu dữ liệu tin nhắn gửi tới từ người dùng trên
-    /// nền tảng facebook.
+    /// nền tảng Facebook.
     /// </summary>
     public class FacebookController : ApiController
     {
@@ -47,6 +48,8 @@ namespace BotProject.Web.API_Webhook
         string verifytoken = "lacviet_bot_chat";
         private Dictionary<string, string> _dicAttributeUser = new Dictionary<string, string>();
         private readonly string Domain = Helper.ReadString("Domain");
+
+        private static readonly HttpClient _client = new HttpClient();
 
         private const string POSTBACK_MODULE = "POSTBACK_MODULE";
         private const string POSTBACK_CARD = "POSTBACK_CARD";
@@ -81,6 +84,18 @@ namespace BotProject.Web.API_Webhook
         // Pattern kiểm tra là số
         private const string NumberPattern = @"^\d+$";
 
+        // Điều kiện có mở search engine
+        bool _isSearchAI = false;
+
+        //tin nhắn vắng mặt
+        string _messageAbsent = "";
+        bool _isHaveMessageAbsent = false;
+
+        //tin nhắn phản hồi chờ
+        string _messageProactive = "";
+        string _patternCardPayloadProactive = "";
+        string _titleCardPayloadProactive = "🔙 Quay về";
+
         // Model user
         ApplicationFacebookUser _fbUser;
 
@@ -89,29 +104,33 @@ namespace BotProject.Web.API_Webhook
 
         private string _botID;
 
+
+        // AIML Bot Services
+        private AIMLBotService _aimlBotService;
+
+        private AIMLbot.Bot _botService;
+
         // Services
         private IApplicationFacebookUserService _appFacebookUser;
-        private BotServiceMedical _botService;
+        //private BotServiceMedical _botService;
         private ISettingService _settingService;
         private IHandleModuleServiceService _handleMdService;
         private IErrorService _errorService;
         private IAIMLFileService _aimlFileService;
-        private IQnAService _qnaService;
         private ApiQnaNLRService _apiNLR;
         private IHistoryService _historyService;
         private ICardService _cardService;
         private AccentService _accentService;
-        private IApplicationThirdPartyService _app3rd;
         private IAttributeSystemService _attributeService;
+        private User _user;
+
         public FacebookController(IApplicationFacebookUserService appFacebookUser,
                                   ISettingService settingService,
                                   IHandleModuleServiceService handleMdService,
                                   IErrorService errorService,
                                   IAIMLFileService aimlFileService,
-                                  IQnAService qnaService,
                                   IHistoryService historyService,
                                   ICardService cardService,
-                                  IApplicationThirdPartyService app3rd,
                                   IAttributeSystemService attributeService)
         {
             _errorService = errorService;
@@ -122,8 +141,10 @@ namespace BotProject.Web.API_Webhook
             _attributeService = attributeService;
             _handleMdService = handleMdService;
             _aimlFileService = aimlFileService;
-            _app3rd = app3rd;
-            _botService = BotServiceMedical.BotInstance;
+            //_botService = BotServiceMedical.BotInstance;
+
+            _aimlBotService = AIMLBotService.AIMLBotInstance;
+
             //_accentService = AccentService.SingleInstance;
             _apiNLR = new ApiQnaNLRService();
             _fbUser = new ApplicationFacebookUser();
@@ -135,8 +156,6 @@ namespace BotProject.Web.API_Webhook
         /// <returns></returns>
         public HttpResponseMessage Get(string botID)
         {
-            _botID = botID;
-            BotLog.Info("FB Callback url: " + _botID);
             var querystrings = Request.GetQueryNameValuePairs().ToDictionary(x => x.Key, x => x.Value);
             if (querystrings["hub.verify_token"] == verifytoken)
             {
@@ -157,10 +176,13 @@ namespace BotProject.Web.API_Webhook
         [HttpPost]
         public async Task<HttpResponseMessage> Post(string botID = "")
         {
-            _botID = botID;
-            BotLog.Info("FB Callback url: " + _botID);
+            if (String.IsNullOrEmpty(botID))
+                return new HttpResponseMessage(HttpStatusCode.BadRequest);
+
+            int botId = Int32.Parse(botID);
 
             var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
+
             var body = await Request.Content.ReadAsStringAsync();
             FacebookBotRequest objMsgUser = JsonConvert.DeserializeObject<FacebookBotRequest>(body);
             if (objMsgUser.@object != "page")
@@ -168,20 +190,18 @@ namespace BotProject.Web.API_Webhook
                 return new HttpResponseMessage(HttpStatusCode.OK);
             }
 
-            string fbPageId = objMsgUser.entry[0].id;
-            var app3rd = _app3rd.GetByPageId(fbPageId);
-            if (app3rd == null)
-            {
-                return new HttpResponseMessage(HttpStatusCode.OK);
-            }
-
-            int botId = app3rd.BotID;
             Setting settingDb = _settingService.GetSettingByBotID(botId);
             pageToken = settingDb.FacebookPageToken;
             appSecret = settingDb.FacebookAppSecrect;
-            
+            _isSearchAI = settingDb.IsMDSearch;
+
             if (!VerifySignature(signature, body))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
+
+            // Khởi động lấy "brain" của bot service theo id
+            GetServerAIMLBot(botID);
+            // Khởi tạo user theo bot service
+            InitUserByServerAIMLBot(objMsgUser.entry[0].messaging[0].sender.id);
 
             foreach (var item in objMsgUser.entry[0].messaging)
             {
@@ -218,6 +238,17 @@ namespace BotProject.Web.API_Webhook
                 }
             }
             return new HttpResponseMessage(HttpStatusCode.OK);
+        }
+
+        private void GetServerAIMLBot(string botId)
+        {
+            _botService = _aimlBotService.GetServerBot(botId);
+            string pathAIML2Graphmaster = ConfigurationManager.AppSettings["AIML2GraphmasterPath"] + "BotID_" + botId + ".bin";
+            _aimlBotService.LoadGraphmasterFromAIMLBinaryFile(pathAIML2Graphmaster, _botService);
+        }
+        private void InitUserByServerAIMLBot(string senderId)
+        {
+            _user = _aimlBotService.loadUserBot(senderId, _botService);
         }
 
         /// <summary>
@@ -268,13 +299,18 @@ namespace BotProject.Web.API_Webhook
                 // Thêm dấu tiếng việt
                 bool isActive = true;
                 string textAccentVN = GetPredictAccentVN(text, isActive);
-                if (textAccentVN != text)
+
+                if (!String.IsNullOrEmpty(textAccentVN))
                 {
-                    string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
-                    await SendMessage(msg, sender);
+                    if (textAccentVN != text.ToLower())
+                    {
+                        string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
+                        await SendMessage(msg, sender);
+                    }
+                    text = textAccentVN;
                 }
-                text = textAccentVN;
-                if(botId == BOT_Y_TE)
+
+                if (botId == BOT_Y_TE)
                 {
                     AttributeFacebookUser attFbUser = new AttributeFacebookUser();
                     attFbUser.AttributeKey = "content_message";
@@ -452,37 +488,41 @@ namespace BotProject.Web.API_Webhook
             }
             if (rsBOT.Type == POSTBACK_NOT_MATCH)
             {
-                List<string> lstSymptoms = new List<string>();
-                if (botId == BOT_Y_TE)
+                if (_isSearchAI)
                 {
-                    lstSymptoms = GetSymptoms(text);
-                    if (lstSymptoms.Count() != 0)
+                    List<string> lstSymptoms = new List<string>();
+                    if (botId == BOT_Y_TE)
                     {
-                        foreach (var symp in lstSymptoms)
+                        lstSymptoms = GetSymptoms(text);
+                        if (lstSymptoms.Count() != 0)
                         {
-                            await SendMessage(symp, sender);
+                            foreach (var symp in lstSymptoms)
+                            {
+                                await SendMessage(symp, sender);
+                            }
                         }
                     }
-                }
-                List<string> lstFaq = new List<string>();
-                lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
-                if (lstFaq.Count() != 0)
-                {
-                    foreach (var faq in lstFaq)
+
+                    List<string> lstFaq = new List<string>();
+                    lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
+                    if (lstFaq.Count() != 0)
                     {
-                        await SendMessage(faq, sender);
+                        foreach (var faq in lstFaq)
+                        {
+                            await SendMessage(faq, sender);
+                        }
+                    }
+
+                    if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0)
+                    {
+                        await SendMessageNotFound(sender);
                     }
                 }
-                if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0)
+                else
                 {
-                    List<string> keyList = new List<string>(_DICTIONARY_NOT_MATCH.Keys);
-                    Random rand = new Random();
-                    string randomKey = keyList[rand.Next(keyList.Count)];
-                    string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
-                    string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
-                        contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
-                    await SendMessage(templateNotFound, sender);
+                    await SendMessageNotFound(sender);
                 }
+                              
             }
             if (rsBOT.Type == POSTBACK_TEXT)
             {
@@ -494,7 +534,7 @@ namespace BotProject.Web.API_Webhook
 
         private AIMLbot.Result GetBotReplyFromAIMLBot(string text)
         {
-            AIMLbot.Result aimlBotResult = _botService.Chat(text);
+            AIMLbot.Result aimlBotResult = _aimlBotService.Chat(text, _user, _botService);
             return aimlBotResult;
         }
         private ResultBot CheckTypePostbackFromResultBotReply(AIMLbot.Result rsAIMLBot)
@@ -668,18 +708,15 @@ namespace BotProject.Web.API_Webhook
         private ProfileUser GetProfileUser(string senderId)
         {
             ProfileUser user = new ProfileUser();
-            using (HttpClient client = new HttpClient())
+            HttpResponseMessage res = new HttpResponseMessage();
+            res = _client.GetAsync($"https://graph.facebook.com/" + senderId + "?fields=first_name,last_name,profile_pic&access_token=" + pageToken).Result;//gender y/c khi sử dụng
+            if (res.IsSuccessStatusCode)
             {
-                HttpResponseMessage res = new HttpResponseMessage();
-                res = client.GetAsync($"https://graph.facebook.com/" + senderId + "?fields=first_name,last_name,profile_pic&access_token=" + pageToken).Result;//gender y/c khi sử dụng
-                if (res.IsSuccessStatusCode)
-                {
-                    var serializer = new JavaScriptSerializer();
-                    serializer.MaxJsonLength = Int32.MaxValue;
-                    user = serializer.Deserialize<ProfileUser>(res.Content.ReadAsStringAsync().Result);
-                }
-                return user;
+                var serializer = new JavaScriptSerializer();
+                serializer.MaxJsonLength = Int32.MaxValue;
+                user = serializer.Deserialize<ProfileUser>(res.Content.ReadAsStringAsync().Result);
             }
+            return user;
         }
 
         private void AddAttributeDefault(string userId, int BotId, string key, string value)
@@ -695,6 +732,18 @@ namespace BotProject.Web.API_Webhook
         #endregion
 
         #region Send API Message Facebook
+
+        private async Task SendMessageNotFound(string sender)
+        {
+            List<string> keyList = new List<string>(_DICTIONARY_NOT_MATCH.Keys);
+            Random rand = new Random();
+            string randomKey = keyList[rand.Next(keyList.Count)];
+            string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
+            string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
+                contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
+            await SendMessage(templateNotFound, sender);
+        }
+
         private async Task SendMultiMessageTask(string templateJson, string sender)
         {
             templateJson = templateJson.Trim();
@@ -738,12 +787,9 @@ namespace BotProject.Web.API_Webhook
                 templateJson = Regex.Replace(templateJson, "<br/>", "\\n");
                 templateJson = Regex.Replace(templateJson, @"\\n\\n", "\\n");
                 templateJson = Regex.Replace(templateJson, @"\\n\\r\\n", "\\n");
-                using (HttpClient client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    HttpResponseMessage res = await client.PostAsync($"https://graph.facebook.com/v3.2/me/messages?access_token=" + pageToken + "",
-                    new StringContent(templateJson, Encoding.UTF8, "application/json"));
-                }
+                _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                HttpResponseMessage res = await _client.PostAsync($"https://graph.facebook.com/v3.2/me/messages?access_token=" + pageToken + "",
+                new StringContent(templateJson, Encoding.UTF8, "application/json"));
             }
         }
 
@@ -817,8 +863,15 @@ namespace BotProject.Web.API_Webhook
             string textVN = text;
             if (isActive)
             {
-                _accentService = AccentService.SingleInstance;
-                textVN = _accentService.GetAccentVN(text);
+                try
+                {
+                    _accentService = AccentService.SingleInstance;
+                    textVN = _accentService.GetAccentVN(text);
+                }
+                catch(Exception ex)
+                {
+                    BotLog.Error(ex.StackTrace + " " + ex.InnerException.Message + ex.Message);
+                }
             }
             return textVN;
         }

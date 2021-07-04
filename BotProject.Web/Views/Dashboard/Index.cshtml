@@ -77,7 +77,21 @@
         top: -4px;
     }
 </style>
-
+<!--progress bar-->
+<style>
+    .progress {
+    display: block;
+    text-align: center;
+    width: 0;
+    height: 15px;
+    background: red;
+    transition: width .3s;
+    }
+    .progress.hide {
+        opacity: 0;
+        transition: opacity 1.3s;
+    }
+</style>
 <div class="container-fluid">
     <div class="d-flex" style="padding-top:10px">
         <ol class="breadcrumb">
@@ -182,9 +196,15 @@
                                     <i class="icon-message1 fa fa-cog"></i>
                                     <a href="@urlSetting"><span class="bot-setting-option">Cài đặt</span>  </a>
                                 </li>
-                                <li style="color: rgb(255, 0, 0);" class="btn-form-delete" data-botID="@bot.ID" data-botName="@bot.Name">
-                                    <i class="icon-trash fa fa-trash" style="color: rgb(255, 0, 0);"></i>
-                                    <span class="bot-setting-option">Xóa Bot</span>
+                                <li>
+                                    <i class="icon-message1 fa fa-clone"></i>
+                                    <a href="javascript:void(0)" class="btn-clone-bot" data-bot-id="@bot.ID"><span class="bot-setting-option">Sao chép</span>  </a>
+                                </li>
+                                <li style="color: rgb(255, 0, 0);">
+                                    <a class="btn-form-delete" data-botID="@bot.ID" data-botName="@bot.Name">
+                                        <i class="icon-trash fa fa-trash" style="color: rgb(255, 0, 0);"></i>
+                                        <span class="bot-setting-option">Xóa Bot</span>
+                                    </a>
                                 </li>
                             </ul>
                         </div>
@@ -193,7 +213,7 @@
                                 <div class="bot-icon" style="color:white;">
                                     @bot.NameAcronym
                                 </div>
-                                <span title="@bot.Name" class="bot-dp-name">@bot.Name</span>
+                                <span title="@bot.Name" class="bot-dp-name">@bot.Name.ToUpper()</span>
                                 <span class="bot-dp-lang"><i class="flag-icon flag-icon-gb"></i> Tiếng Việt</span>
                                 <span class="bot-dp-active" data-bot-id="@bot.ID">
                                     <label>

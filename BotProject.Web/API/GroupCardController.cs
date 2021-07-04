@@ -38,11 +38,11 @@ namespace BotProject.Web.API
                 HttpResponseMessage response = null;
                 var lstGroupCard = _groupCardService.GetListGroupCardByBotID(botId);
                 var lstGroupCardVm = Mapper.Map<IEnumerable<GroupCard>, IEnumerable<GroupCardViewModel>>(lstGroupCard);
-                if (lstGroupCardVm != null && lstGroupCardVm.Count() != 0)
+                if (lstGroupCardVm != null && lstGroupCardVm.Any())
                 {
                     foreach(var item in lstGroupCardVm)
                     {
-                        var lstCard = _cardService.GetListCardByGroupCardID(item.ID).ToList();
+                        var lstCard = _cardService.GetListCardByGroupCardID(item.ID);
                         item.Cards = Mapper.Map<IEnumerable<Card>, IEnumerable<CardViewModel>>(lstCard);
                     }
                 }
