@@ -705,17 +705,85 @@ namespace BotProject.Service
                         var mdSearchCategory = _mdSearchCategoryService.GetById(mdSearchDb.MdSearchCategoryID);
                         if (mdSearchCategory.Alias.ToLower() == Common.CommonConstants.MdSearch_Luat)
                         {
-                            rsHandle.ResultAPI = GetModuleSearchAPI(text, mdSearchDb.ParamAPI, mdSearchDb.UrlAPI, mdSearchDb.KeyAPI, mdSearchDb.MethodeAPI);
-                            if (String.IsNullOrEmpty(rsHandle.ResultAPI))
+                            if (mdSearchDb.UrlAPI.Contains(apiSearchLegal))
                             {
+                                rsHandle.ResultAPI = GetModuleApiSearchLegal(text, mdSearchDb.ParamAPI, mdSearchDb.UrlAPI, mdSearchDb.KeyAPI, mdSearchDb.MethodeAPI);
+                                if (!String.IsNullOrEmpty(rsHandle.ResultAPI))
+                                {                                  
+                                    var dataListLegal = new JavaScriptSerializer
+                                    {
+                                        MaxJsonLength = Int32.MaxValue,
+                                        RecursionLimit = 100
+                                    }.Deserialize<List<LegalApiModel>>(rsHandle.ResultAPI);
+                                    if (dataListLegal.Count() != 0)
+                                    {
+                                        string resultTotal = "Tìm thấy " + dataListLegal.Count() + " kết quả liên quan văn bản luật";
+                                        // kèm payload để thoát tra cứu
+                                        rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateText(resultTotal, "{{senderId}}").ToString() + "split" + FacebookTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal,"", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                        rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateText(resultTotal,"{{senderId}}").ToString()
+                                            + "split" 
+                                            + ZaloTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal).ToString()
+                                            + "split"
+                                            + ZaloTemplate.GetMessageTemplateTextAndQuickReply("Anh/chị chọn nút bên dưới nếu muốn thoát tra cứu", "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                        return rsHandle;
+                                    }                                    
+                                }
+
+                                rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateTextAndQuickReply(mdSearchDb.MessageError, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateTextAndQuickReply(mdSearchDb.MessageError, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+
                                 rsHandle.Message = tempText(mdSearchDb.MessageError);
                                 rsMessage = mdSearchDb.MessageError;
+                                return rsHandle;
+                            }
+                            else if(mdSearchDb.UrlAPI.Contains(apiSearchArticle))
+                            {
+                                rsHandle.ResultAPI = GetModuleApiSearchArticle(text, mdSearchDb.ParamAPI, mdSearchDb.UrlAPI, mdSearchDb.KeyAPI, mdSearchDb.MethodeAPI);
+                                if (!String.IsNullOrEmpty(rsHandle.ResultAPI))
+                                {
+                                    var resultArticles = new JavaScriptSerializer
+                                    {
+                                        MaxJsonLength = Int32.MaxValue,
+                                        RecursionLimit = 100
+                                    }.Deserialize<Dictionary<string, string>>(rsHandle.ResultAPI);
+
+                                    string totalArticle = resultArticles["total"];
+                                    if (totalArticle != "0")
+                                    {
+                                        string resultTotal = "Tìm thấy " + totalArticle + " kết quả liên quan điều luật";
+                                        string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + text;
+                                        // kèm payload để thoát tra cứu
+                                        rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                        rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết").ToString()
+                                            +"split"
+                                            + ZaloTemplate.GetMessageTemplateTextAndQuickReply("Anh/chị chọn nút bên dưới nếu muốn thoát tra cứu", "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                        return rsHandle;
+                                    }
+                                }
+                                rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateTextAndQuickReply(mdSearchDb.MessageError, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateTextAndQuickReply(mdSearchDb.MessageError, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+
+                                rsHandle.Message = tempText(mdSearchDb.MessageError);
+                                rsMessage = mdSearchDb.MessageError;
+                                return rsHandle;
                             }
                             else
                             {
-                                rsHandle.Message = tempText("Tôi không hiểu");
-                                rsMessage = "Tôi không hiểu";
+                                rsHandle.ResultAPI = GetModuleApiSearchQuestionAnwser(text, mdSearchDb.ParamAPI, mdSearchDb.UrlAPI, mdSearchDb.KeyAPI, mdSearchDb.MethodeAPI);
+                                if (String.IsNullOrEmpty(rsHandle.ResultAPI))
+                                {
+                                    rsHandle.Message = tempText(mdSearchDb.MessageError);
+                                    rsMessage = mdSearchDb.MessageError;
+                                }
                             }
+
+                            if (String.IsNullOrEmpty(rsHandle.ResultAPI))
+                            {
+                                rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateTextAndQuickReply(rsMessage, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                                rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateTextAndQuickReply(rsMessage, "{{senderId}}", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
+                            }
+
+                            return rsHandle;
                         }
                         if (mdSearchCategory.Alias.ToLower() == Common.CommonConstants.MdSearch_Dell)
                         {
@@ -943,9 +1011,47 @@ namespace BotProject.Service
             return strRandom;
         }
 
-
         #region --DATA SOURCE API--
         private string apiRelateQA = "/api/get_related_pairs";
+        private string apiSearchLegal = "/api/legal/SearchLegalDoc";
+        private string apiSearchArticle = "/api/article/search-relate";
+        private string urlAPISearchLegal = "https://trogiupluat.vn";
+        private string GetModuleApiSearchQuestionAnwser(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            string responseString;
+            if (String.IsNullOrEmpty(param))
+            {
+                param = "question=" + contentText + "&type=leg&number=10";
+            }
+            else
+            {
+                param = "question=" + contentText + "&type=leg&number=10&field=" + param;
+            }
+            responseString = ExcuteModuleSearchAPI(apiRelateQA, param, urlAPI, keyAPI, methodeHttp);
+            if (responseString != null)
+            {
+                var lstQues = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }
+                .Deserialize<List<dynamic>>(responseString);
+            }
+            return responseString;
+        }
+
+        private string GetModuleApiSearchLegal(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            param = "keyword=" + contentText;
+            return ExcuteModuleSearchAPI(apiSearchLegal, param, urlAPISearchLegal, keyAPI, methodeHttp);
+        }
+
+        private string GetModuleApiSearchArticle(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            param = "keyword=" + contentText;
+            return ExcuteModuleSearchAPI(apiSearchArticle, param, urlAPISearchLegal, keyAPI, methodeHttp);
+        }
+
         private string ExcuteModuleSearchAPI(string NameFuncAPI, string param, string UrlAPI, string KeySecrectAPI, string Type = "Post")
         {
             string result = null;
@@ -973,7 +1079,7 @@ namespace BotProject.Service
                     }
                     else if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_GET))
                     {
-                        string requestUri = NameFuncAPI + "?" + httpContent;
+                        string requestUri = NameFuncAPI + "?" + param;
                         response = client.GetAsync(requestUri).Result;
                     }
                 }
@@ -992,35 +1098,12 @@ namespace BotProject.Service
             }
             return result;
         }
-        private string GetModuleSearchAPI(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
-        {
-            string responseString;
-            if (String.IsNullOrEmpty(param))
-            {
-                param = "question=" + contentText + "&type=leg&number=10";
-            }
-            else
-            {
-                param = "question=" + contentText + "&type=leg&number=10&field=" + param;
-            }
-            responseString = ExcuteModuleSearchAPI(apiRelateQA, param, urlAPI, keyAPI, methodeHttp);
-            if (responseString != null)
-            {
-                var lstQues = new JavaScriptSerializer
-                {
-                    MaxJsonLength = Int32.MaxValue,
-                    RecursionLimit = 100
-                }
-                .Deserialize<List<dynamic>>(responseString);
-            }
-            return responseString;
-        }
+
 
         public void Save()
         {
             throw new NotImplementedException();
         }
-
 
         private void LogError(string message)
         {

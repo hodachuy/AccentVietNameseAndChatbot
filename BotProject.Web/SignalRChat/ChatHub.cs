@@ -11,6 +11,7 @@ using BotProject.Common;
 using System.Data.SqlClient;
 using BotProject.Data.Repositories;
 using Microsoft.AspNet.SignalR.Hubs;
+using Autofac;
 
 namespace BotProject.Web.SignalRChat
 {
@@ -26,15 +27,19 @@ namespace BotProject.Web.SignalRChat
 
         private readonly string _sqlConnection = Helper.ReadString("SqlConnection");
 
+        private readonly ILifetimeScope _hubLifetimeScope;
+
         private ICustomerService _customerService;
         private IChatCommonSerivce _chatCommonService;
         private ApplicationUserManager _userManager;
 
-        public ChatHub()
+       
+        public ChatHub(ILifetimeScope lifetimeScope)
         {
-            _customerService = ServiceFactory.GetService<ICustomerService>();
+            _hubLifetimeScope = lifetimeScope.BeginLifetimeScope("AutofacWebRequest");
+            _customerService = _hubLifetimeScope.Resolve<ICustomerService>();
+            _chatCommonService = _hubLifetimeScope.Resolve<IChatCommonSerivce>();
             _userManager = ServiceFactory.GetService<ApplicationUserManager>();
-            _chatCommonService = ServiceFactory.GetService<IChatCommonSerivce>();
         }
 
 

@@ -20,6 +20,7 @@ using System.Text.RegularExpressions;
 using BotProject.Service.Livechat;
 using System.Xml;
 using System.Web;
+using System.Net.Http.Headers;
 
 namespace BotProject.Web.API
 {
@@ -73,23 +74,7 @@ namespace BotProject.Web.API
             _apiNLR = new ApiQnaNLRService();
 
 
-        }
-
-        [Route("test")]
-        [HttpGet]
-        public HttpResponseMessage Test(HttpRequestMessage request, string content)
-        {
-            return CreateHttpResponse(request, () =>
-            {
-                HttpResponseMessage response;
-
-                var lstLegal = _apiNLR.GetRelatesLegalAndArticle(content);
-
-                response = request.CreateResponse(HttpStatusCode.OK, lstLegal);
-
-                return response;
-            });
-        }
+        }       
 
         [Route("getall")]
 		[HttpGet]

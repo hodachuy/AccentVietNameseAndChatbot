@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>BotProject.Common</RootNamespace>
     <AssemblyName>BotProject.Common</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -112,6 +112,7 @@
     <Compile Include="ViewModels\LiveChat\SP_CustomerJoin.cs" />
     <Compile Include="ViewModels\MdQnAViewModel.cs" />
     <Compile Include="ViewModels\QuesTargetViewModel.cs" />
+    <Compile Include="ViewModels\SearchLegalViewModel.cs" />
     <Compile Include="ViewModels\SearchNlpQnAViewModel.cs" />
     <Compile Include="ViewModels\StoreProcBotViewModel.cs" />
     <Compile Include="ViewModels\StoreProcCardViewModel.cs" />

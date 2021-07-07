@@ -27,6 +27,46 @@ namespace BotProject.Common.AppThird3PartyTemplate
                      message = new { text = text },
                  });
         }
+
+        public static JObject GetMessageTemplateTextAndButtonLink(string text, string sender, string url, string titleButton, string patternQuickReply = "", string titleQuickReply = "")
+        {
+            return JObject.FromObject(
+                 new
+                 {
+                     recipient = new { id = sender },
+                     message = new
+                     {
+                         attachment = new
+                         {
+                             type = "template",
+                             payload = new
+                             {
+                                 template_type = "button",
+                                 text = text,
+                                 buttons = new[]
+                                 {
+                                     new
+                                     {
+                                          type = "web_url",
+                                          title = titleButton,
+                                          url = url,
+                                          webview_height_ratio = "full"
+                                     }
+                                 }
+                             }
+                         },
+                         quick_replies = new[]
+                             {
+                                 new
+                                 {
+                                      content_type = "text",
+                                      title = titleQuickReply,
+                                      payload = patternQuickReply
+                                 }
+                             }
+                     },
+                 });
+        }
         public static JObject GetMessageTemplateImage(string urlImage, string sender)
         {
             return JObject.FromObject(
@@ -200,6 +240,52 @@ namespace BotProject.Common.AppThird3PartyTemplate
                       }
                   },
               });
-        }  
+        }
+        public static Object GetMessageTemplateGenericByListLegal(string sender, List<LegalApiModel> lstLegalAPI, string urlDetail = "", string patternQuickReply = "", string titleQuickReply = "")
+        {
+            return JObject.FromObject(
+              new
+              {
+                  recipient = new { id = sender },
+                  message = new
+                  {
+                      attachment = new
+                      {
+                          type = "template",
+                          payload = new
+                          {
+                              template_type = "generic",
+                              elements = from q in lstLegalAPI
+                                         select new
+                                         {
+                                             title = (q.Title.Length > 60 ? q.Title.Substring(0, 60) + "..." : q.Title),
+                                             item_url = q.Url,
+                                             image_url = ConfigHelper.ReadString("Domain") + "assets/images/faq_legal.png",
+                                             subtitle = "Văn bản luật",
+                                             buttons = new[]
+                                             {
+                                                             new
+                                                                {
+                                                                   type = "web_url",
+                                                                   url =  q.Url,
+                                                                   title = "Xem văn bản"
+                                                                },
+                                                        }
+                                         }
+                          }
+                      },
+                      quick_replies = new[]
+                             {
+                                 new
+                                 {
+                                      content_type = "text",
+                                      title = titleQuickReply,
+                                      payload = patternQuickReply
+                                 }
+                             }
+                  },
+              });
+        }
+
     }
 }

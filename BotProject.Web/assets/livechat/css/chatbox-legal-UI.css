@@ -239,7 +239,7 @@
     z-index: 3;
     color: #fff;
     font-size: 1em;
-    height: 76px;
+    height: 56px;
     flex-shrink: 0;
     -webkit-box-flex: 0;
     flex-grow: 0;
@@ -254,7 +254,7 @@
     border-image: initial;
     padding: 0px 0.8em;
     transition: background-color 0.3s ease 0s;
-    background-color: #39F; /*rgb(240, 240, 240);*/
+    background-color: #F26630; /*rgb(240, 240, 240);*/
 }
 
     .header .header-body {
@@ -262,7 +262,7 @@
         text-align: center;
         -webkit-box-flex: 1;
         flex-grow: 1;
-        font-size: 28px;
+        font-size: 23px;
         white-space: nowrap;
         text-overflow: ellipsis;
         margin: 0px 0px 4px;
@@ -284,7 +284,11 @@
     height: 1em;
     font-size: 2rem;
     user-select: none;
+	color:#fff;
     fill: currentcolor;
+}
+.lc-3a63hl{
+	background-color:#F26630 !important;
 }
 
 .flex-grow-1 {
@@ -472,7 +476,7 @@
                     margin-bottom: 4px;
                     overflow-wrap: break-word;
                     border:.75px solid rgba(0, 0, 0, .10);
-                    width:90%;/*260px*/
+                    width:260px ;/*90%;*/
                 }
 
                 .chat-block .chat-content .messages .message-item.me {
@@ -496,7 +500,7 @@
                     }*/
 
                     .chat-block .chat-content .messages .message-item.me .message-item-content {
-                        background-color: #0081ff;
+                        background-color: #F26630;
                         color: rgba(255, 255, 255, 0.9);
                     }
 
@@ -525,7 +529,7 @@
                     }
 
 .chat-footer {
-    /*padding: 0.5rem;*/
+    /* padding: 0.5rem; */
 }
 
     .chat-footer .chat-footer-buttons button {
@@ -567,7 +571,7 @@ small {
     height: 100%;
     will-change: opacity;
     backface-visibility: hidden;
-    padding: 1em;
+    padding: 0.1em;
 }
 @media(max-width:381px) {
     .chatbox-main{
@@ -780,6 +784,7 @@ small {
         font-weight: 400;
         white-space: nowrap;
         text-overflow: ellipsis;
+		font-size:11.5pt;
         width: auto;
         color: #007bff;
         background-color: white;
@@ -877,6 +882,7 @@ small {
             font-weight: 400;
             word-break: break-word;
             background-color: rgb(255, 255, 255);
+            /*font-family: "Noto Sans";*/
             font-size: 0.9em;
             color: #007bff;
             border-width: 1px;
@@ -887,7 +893,7 @@ small {
             margin: 0px 4px 0px;
             padding: 8px;
             border-radius: 6px !important;
-            cursor:pointer;
+			cursor:pointer;
         }
 
 a.btn_back_quickreply {
@@ -1035,12 +1041,12 @@ _3bwv > ._3bwy {
     margin: 0px;
     padding: 0px;
     border-radius: 6px;
-    cursor: pointer;
+	cursor: pointer;
 }
 
 
 .message-generic-title{
-    font-size: 10pt;
+    font-size: 11pt;
     line-height: 1.5rem;
 }
 .message-generic-subtitle{

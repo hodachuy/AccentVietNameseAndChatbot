@@ -13,6 +13,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -704,6 +705,20 @@ namespace BotProject.Web.API_Webhook
             HttpResponseMessage res;
             if (!String.IsNullOrEmpty(templateJson))
             {
+                // Lấy token file từ zalo
+                if(templateJson.Contains("\"type\": \"file\""))
+                {
+                    var objFile = new JavaScriptSerializer
+                    {
+                        MaxJsonLength = Int32.MaxValue,
+                        RecursionLimit = 100
+                    }.Deserialize<dynamic>(templateJson);
+
+                    string fileToken = GetFileToken(objFile.message.attachment.payload);
+
+                    templateJson = ZaloTemplate.GetMessageTemplateFile(fileToken, sender).ToString();
+                }
+
                 templateJson = templateJson.Replace("{{senderId}}", sender);
                 templateJson = Regex.Replace(templateJson, "File/", Domain + "File/");
                 templateJson = Regex.Replace(templateJson, "<br />", "\\n");
@@ -721,6 +736,7 @@ namespace BotProject.Web.API_Webhook
                         }
                     }
                 }
+                
                 _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 res = await _client.PostAsync($"https://openapi.zalo.me/v2.0/oa/message?access_token=" + pageToken + "", new StringContent(templateJson, Encoding.UTF8, "application/json"));
 
@@ -800,23 +816,45 @@ namespace BotProject.Web.API_Webhook
         private ProfileUser GetProfileUser(string senderId)
         {
             ProfileUser user = new ProfileUser();
-            using (HttpClient client = new HttpClient())
+            string userId = JObject.FromObject(
+                             new
+                             {
+                                 user_id = senderId
+                             }).ToString();
+            HttpResponseMessage res = new HttpResponseMessage();
+            res = _client.GetAsync($"https://openapi.zalo.me/v2.0/oa/getprofile?access_token=" + pageToken + "&data=" + userId).Result;//gender y/c khi sử dụng
+            if (res.IsSuccessStatusCode)
             {
-                string userId = JObject.FromObject(
-                 new
-                 {
-                     user_id = senderId
-                 }).ToString();
-                HttpResponseMessage res = new HttpResponseMessage();
-                res = client.GetAsync($"https://openapi.zalo.me/v2.0/oa/getprofile?access_token=" + pageToken + "&data=" + userId).Result;//gender y/c khi sử dụng
-                if (res.IsSuccessStatusCode)
-                {
-                    var serializer = new JavaScriptSerializer();
-                    serializer.MaxJsonLength = Int32.MaxValue;
-                    user = serializer.Deserialize<ProfileUser>(res.Content.ReadAsStringAsync().Result);
-                }
-                return user;
+                var serializer = new JavaScriptSerializer();
+                serializer.MaxJsonLength = Int32.MaxValue;
+                user = serializer.Deserialize<ProfileUser>(res.Content.ReadAsStringAsync().Result);
             }
+            return user;
+        }
+
+        private string GetFileToken(string fileUrl)
+        {
+            string fileToken = "";
+            var multiForm = new MultipartFormDataContent();
+
+            // add file and directly upload it
+            FileStream fs = File.OpenRead(fileUrl);
+            multiForm.Add(new StreamContent(fs), "file", Domain + Path.GetFileName(fileUrl));
+
+            // send request to API
+            var url = "https://openapi.zalo.me/v2.0/oa/upload/file?access_token=" + pageToken;
+            var response = _client.PostAsync(url, multiForm).Result;
+            if (response.IsSuccessStatusCode)
+            {
+                var result = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }
+                .Deserialize<dynamic>(response.Content.ReadAsStringAsync().Result);
+                fileToken = result.data.token;
+            }
+            return fileToken;
         }
 
         private void AddAttributeDefault(string userId, int BotId, string key, string value)

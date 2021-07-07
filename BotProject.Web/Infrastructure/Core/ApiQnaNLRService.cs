@@ -276,19 +276,12 @@ namespace BotProject.Web.Infrastructure.Core
                 {
                     string responseString = response.Content.ReadAsStringAsync().Result;
 
-                    var result = new JavaScriptSerializer { MaxJsonLength = Int32.MaxValue, RecursionLimit = 100 }.Deserialize<LegalResult>(responseString);
+                    var result = new JavaScriptSerializer { MaxJsonLength = Int32.MaxValue, RecursionLimit = 100 }.Deserialize<SearchLegalViewModel>(responseString);
                     lstLegalVm = result.data;
                 }
             }
             return lstLegalVm;
         }
         #endregion
-
-        public class LegalResult
-        {
-            public bool status { get; set; }
-            public string message { get; set; }
-            public List<LegalVm> data { get; set; }
-        }
     }
 }

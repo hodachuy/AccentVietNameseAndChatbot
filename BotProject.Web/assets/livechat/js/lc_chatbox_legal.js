@@ -125,8 +125,6 @@ var cBoxHub = {
             window.sessionStorage.setItem("lc_isSaveCustomer", true);
             $(".message-form-user").hide();
             $(".chat-footer").show();
-
-
 			
             // if (_isSaveCustomer == 'false') {
                 // $(".chat-footer").hide();
@@ -763,7 +761,7 @@ var messageBot = {
                                     $.each(lstGeneric, function (index, value) {
                                         let genetic = {};
                                         genetic.title = value.title;
-                                        genetic.item_url = (value.item_url == "" ? "" : value.item_url.substr(value.item_url.indexOf('://') + 3));
+                                        genetic.item_url = value.item_url;//(value.item_url == "" ? "" : value.item_url.substr(value.item_url.indexOf('://') + 3));
                                         genetic.image_url = value.image_url; //_Host + 
                                         genetic.subtitle = value.subtitle;
                                         var lstButton = value.buttons;

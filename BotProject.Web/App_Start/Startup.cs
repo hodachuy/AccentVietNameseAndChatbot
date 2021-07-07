@@ -1,24 +1,22 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.Owin;
-using Owin;
-using Autofac;
+﻿using Autofac;
 using Autofac.Integration.Mvc;
-using System.Reflection;
-using BotProject.Data.Infrastructure;
-using Microsoft.AspNet.Identity;
-using BotProject.Model.Models;
-using System.Web;
-using Microsoft.Owin.Security.DataProtection;
-using BotProject.Data.Repositories;
-using BotProject.Service;
-using System.Web.Mvc;
-using System.Web.Http;
+using Autofac.Integration.SignalR;
 using Autofac.Integration.WebApi;
 using BotProject.Data;
+using BotProject.Data.Infrastructure;
+using BotProject.Data.Repositories;
+using BotProject.Model.Models;
+using BotProject.Service;
+using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.SignalR;
+using Microsoft.Owin;
 using Microsoft.Owin.Cors;
-using System.Collections.Generic;
+using Microsoft.Owin.Security.DataProtection;
+using Owin;
+using System.Reflection;
+using System.Web;
+using System.Web.Http;
+using System.Web.Mvc;
 
 [assembly: OwinStartup(typeof(BotProject.Web.App_Start.Startup))]
 
@@ -41,7 +39,7 @@ namespace BotProject.Web.App_Start
                 // configure the set of origins and/or http verbs by
                 // providing a cors options with a different policy.
 
-                map.UseCors(CorsOptions.AllowAll);
+                map.UseCors(CorsOptions.AllowAll);             
 
                 var hubConfiguration = new HubConfiguration
                 {
@@ -76,6 +74,8 @@ namespace BotProject.Web.App_Start
             builder.Register(c => HttpContext.Current.GetOwinContext().Authentication).InstancePerRequest();
             builder.Register(c => app.GetDataProtectionProvider()).InstancePerRequest();
 
+            // Hub SignalR
+            builder.RegisterHubs(Assembly.GetExecutingAssembly());
 
             // Repositories
             builder.RegisterAssemblyTypes(typeof(ErrorRepository).Assembly)
@@ -87,10 +87,16 @@ namespace BotProject.Web.App_Start
                .Where(t => t.Name.EndsWith("Service"))
                .AsImplementedInterfaces().InstancePerRequest();
 
+            // Web Mvc
             Autofac.IContainer container = builder.Build();
-            DependencyResolver.SetResolver(new AutofacDependencyResolver(container));
+            DependencyResolver.SetResolver(new Autofac.Integration.Mvc.AutofacDependencyResolver(container));
 
-            GlobalConfiguration.Configuration.DependencyResolver = new AutofacWebApiDependencyResolver((IContainer)container); //Set the WebApi DependencyResolver
+            // Web Api
+            GlobalConfiguration.Configuration.DependencyResolver = new AutofacWebApiDependencyResolver((IContainer)container);
+
+            // SignalR
+            GlobalHost.DependencyResolver = new Autofac.Integration.SignalR.AutofacDependencyResolver(container);
+
         }
     }
 }

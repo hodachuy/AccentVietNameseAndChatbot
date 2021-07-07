@@ -7,6 +7,13 @@ using System.Web;
 
 namespace BotProject.Common.AppThird3PartyTemplate
 {
+    /*
+     * Lưu ý:
+     * Template Zalo không có button quickreply như template Facebook,
+     * ui card sẽ chuyển button quickreply tới button nằm trong thẻ
+     * số button tối đa là 5
+     * https://developers.zalo.me/docs/api/official-account-api/phu-luc/cau-truc-cua-tham-so-buttons-post-3965
+     */
     public class ZaloTemplate
     {
         public static JObject GetMessageTemplateText(string text, string sender)
@@ -41,6 +48,26 @@ namespace BotProject.Common.AppThird3PartyTemplate
                                         url = urlImage
                                      }
                                  }
+                             }
+                         }
+                     },
+                 });
+        }
+
+        public static JObject GetMessageTemplateFile(string token, string sender)
+        {
+            return JObject.FromObject(
+                 new
+                 {
+                     recipient = new { user_id = sender },
+                     message = new
+                     {
+                         attachment = new
+                         {
+                             type = "file",
+                             payload = new
+                             {
+                                 token = token
                              }
                          }
                      },
@@ -144,6 +171,49 @@ namespace BotProject.Common.AppThird3PartyTemplate
 
         }
 
+        public static JObject GetMessageTemplateTextAndButtonLink(string text, string sender, string url, string titleQuickReply)
+        {
+            if (!String.IsNullOrEmpty(url) && !String.IsNullOrEmpty(titleQuickReply))
+            {
+                return JObject.FromObject(
+                     new
+                     {
+                         recipient = new { user_id = sender },
+                         message = new
+                         {
+                             text = text,
+                             attachment = new
+                             {
+                                 type = "template",
+                                 payload = new
+                                 {
+                                     template_type = "button",
+                                     buttons = new[]
+                                     {
+                                         new
+                                         {
+                                            type = "oa.open.url",
+                                            title = titleQuickReply,
+                                            payload = url
+                                         }
+                                     }
+                                 }
+                             }
+                         },
+                     });
+            }
+            return JObject.FromObject(
+                     new
+                     {
+                         recipient = new { user_id = sender },
+                         message = new
+                         {
+                             text = text
+                         },
+                     });
+
+        }
+
         public static Object GetMessageTemplateGenericByList(string sender, List<SearchNlpQnAViewModel> lstSearchNLP,string urlDetail = "")
         {
             return JObject.FromObject(
@@ -176,7 +246,7 @@ namespace BotProject.Common.AppThird3PartyTemplate
               });
         }
 
-        public static Object GetMessageTemplateGenericByListMed(string sender, List<SearchSymptomViewModel> lstSearchNLP, string urlDetail = "")
+        public static Object GetMessageTemplateGenericByListMed(string sender, List<SearchSymptomViewModel> lstSearchNLP)
         {
             return JObject.FromObject(
               new
@@ -207,5 +277,38 @@ namespace BotProject.Common.AppThird3PartyTemplate
                   },
               });
         }
+
+        public static Object GetMessageTemplateGenericByListLegal(string sender, List<LegalApiModel> lstLegalAPI)
+        {
+            return JObject.FromObject(
+              new
+              {
+                  recipient = new { user_id = sender },
+                  message = new
+                  {
+                      attachment = new
+                      {
+                          type = "template",
+                          payload = new
+                          {
+                              template_type = "list",
+                              elements = from q in lstLegalAPI
+                                         select new
+                                         {
+                                             title = (q.Title.Length > 60 ? q.Title.Substring(0, 60) + "..." : q.Title),
+                                             subtitle = "Văn bản luật",
+                                             image_url = ConfigHelper.ReadString("Domain") + "assets/images/faq_legal.png",
+                                             default_action = new
+                                             {
+                                                 type = "oa.open.url",
+                                                 url = q.Url
+                                             }
+                                         }
+                          }
+                      }
+                  },
+              });
+        }
+
     }
 }

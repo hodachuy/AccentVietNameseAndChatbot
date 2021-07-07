@@ -467,7 +467,7 @@
                                                                     <input name="name" id="txtCustomerName" class="lc-1gz7fd7 e1xplv9i0" value="">
                                                                 </div>
                                                             </div>
-                                                            <div class="lc-qvffge e108e6fy0">
+                                                            <div class="lc-qvffge e108e6fy0" style="display:none">
                                                                 <div class="lc-1etn9kn eptvlbh0">
                                                                     <label for="email" class="lc-xswwe8 e2zxkge0">
                                                                         <span class="Linkify">E-mail:</span>
@@ -475,7 +475,7 @@
                                                                     <input name="email" id="txtCustomerEmail" type="email" class="lc-1gz7fd7 e1xplv9i0" value="">
                                                                 </div>
                                                             </div>
-                                                            <div class="lc-qvffge e108e6fy0">
+                                                            <div class="lc-qvffge e108e6fy0" style="display:none">
                                                                 <div class="lc-1etn9kn eptvlbh0">
                                                                     <label for="email" class="lc-xswwe8 e2zxkge0">
                                                                         <span class="Linkify">Số điện thoại:</span>
@@ -588,11 +588,13 @@
 
 
     <!--SignalR Chat-->
-    <script src="~/Scripts/jquery.signalR-2.2.2.js"></script>
+    <script src="~/Scripts/jquery.signalR-2.3.0.js"></script>
     <script src="~/signalr/hubs"></script>
     <script src="~/assets/livechat/js/helper/lc_common.js"></script>
     @if (channelGroupId == 5041)
     {
+        <link href="~/assets/livechat/css/chatbox-legal-UI.css?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/css/chatbox-legal-UI.css")).ToString("HHmmssfff")" rel="stylesheet" />
+
         <script src="~/assets/livechat/js/lc_chatbox_legal.js?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/js/lc_chatbox_legal.js")).ToString("HHmmssfff")"></script>
     }
     else if (channelGroupId == 3019)

@@ -432,7 +432,7 @@ namespace BotProject.Web.API_Webhook
                 {
                     string postbackModule = _plUserDb.PredicateValue;
                     string templateModule = HandlePostbackModule(postbackModule, text, botId, false);
-                    await SendMessage(templateModule, senderId);
+                    await SendMultiMessageTask(templateModule, senderId);
                     return await Task.FromResult<List<string>>(_lstBotReplyResponse);
                 }
             }
@@ -708,7 +708,7 @@ namespace BotProject.Web.API_Webhook
             return msgJson;
         }
 
-        #region Send API Message Facebook
+        #region Send API Message
         private async Task SendMultiMessageTask(string templateJson, string sender)
         {
             templateJson = templateJson.Trim();
@@ -724,9 +724,8 @@ namespace BotProject.Web.API_Webhook
                 }
             }
             string[] strArrayJson = Regex.Split(templateJson, "split");
-            foreach (var temp in strArrayJson)
+            foreach (var tempJson in strArrayJson)
             {
-                string tempJson = temp;
                 await SendMessage(tempJson, sender);
             }
         }

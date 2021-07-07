@@ -111,7 +111,7 @@ var lacviet = {
         $("#cb-ques-popup").empty().append(html);
     }
 };
-$('body').on('click', '.fb_dialog', function (e) {
+$(document).on('click', '.fb_dialog', function (e) {
     if ($("#dialog_iframe").hasClass("fb_customer_chat_bounce_out_v2")) { // nếu đang đóng
         $("#dialog_iframe").removeClass('fb_customer_chat_bounce_out_v2').addClass('fb_customer_chat_bounce_in_v2');
         if ($(parent.window).width() <= 768) {
