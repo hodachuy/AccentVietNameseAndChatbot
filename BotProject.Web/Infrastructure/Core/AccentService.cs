@@ -64,6 +64,25 @@ namespace BotProject.Web
         }
 
 
+        /// <summary>
+        /// If text is legal code in legal document
+        /// replace a character from non accent to accent, example d to đ
+        /// </summary>
+        /// <param name="text"></param>
+        /// <returns></returns>
+        public string ReplaceToCharAccentFromLegalCode(string text)
+        {
+            string content = Regex.Replace(text, @"(\d{1,5}\/)?\d{1,5}(\-\w+)?\/([a-zA-ZĐ\-]+)", (m) => {
+                if (m.Value.ToLower().Contains("d"))
+                {
+                    return m.Value.Replace("d", "đ");
+                }
+                return m.Value;
+            }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            return content;
+        }
+
+
         // Call API SERVER DIGIPRO
         //public string GetAccentVN(string text)
         //{

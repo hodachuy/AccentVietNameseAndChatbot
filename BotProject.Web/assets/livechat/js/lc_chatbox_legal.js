@@ -1,19 +1,19 @@
 ﻿
-console.log(
-    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
-    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
-    ' (' + jscd.browserVersion + ')\n' +
-    'Mobile: ' + jscd.mobile + '\n' +
-    'Flash: ' + jscd.flashVersion + '\n' +
-    'Cookies: ' + jscd.cookies + '\n' +
-    'Screen Size: ' + jscd.screen + '\n\n' +
-    'Full User Agent: ' + navigator.userAgent + '\n\n' +
-    'IP: ' + ipInfo.ip + '\n' +
-    'City: ' + ipInfo.city + '\n' +
-    'Region: ' + ipInfo.region + '\n' +
-    'Latitude: ' + ipInfo.latitude + '\n' +
-    'Longtitude: ' + ipInfo.longtitude
-);
+//console.log(
+//    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
+//    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
+//    ' (' + jscd.browserVersion + ')\n' +
+//    'Mobile: ' + jscd.mobile + '\n' +
+//    'Flash: ' + jscd.flashVersion + '\n' +
+//    'Cookies: ' + jscd.cookies + '\n' +
+//    'Screen Size: ' + jscd.screen + '\n\n' +
+//    'Full User Agent: ' + navigator.userAgent + '\n\n' +
+//    'IP: ' + ipInfo.ip + '\n' +
+//    'City: ' + ipInfo.city + '\n' +
+//    'Region: ' + ipInfo.region + '\n' +
+//    'Latitude: ' + ipInfo.latitude + '\n' +
+//    'Longtitude: ' + ipInfo.longtitude
+//);
 
 var CustomerModel = {    
     ID: _customerId,
@@ -25,7 +25,7 @@ var CustomerModel = {
     Phone: window.sessionStorage.getItem("lc_CustomerPhone") || '',
     Email: window.sessionStorage.getItem("lc_CustomerEmail") || ''
 };
-console.log(CustomerModel)
+//console.log(CustomerModel)
 var AgentModel = {
     ID: '',
     ChannelGroupID: _channelGroupId,
@@ -94,7 +94,7 @@ $(document).ready(function () {
 var varyReconnected = function intervalFunc() {
     timeReconnecting--;
     document.getElementById("reconeting-time").innerHTML = timeReconnecting;
-    console.log(timeReconnecting);
+    //console.log(timeReconnecting);
     if (timeReconnecting == parseInt("0")) {//timeReconnecting == 0
         clearInterval(intervalReconnectId);
         $('.box-reconecting').removeClass('showing');
@@ -118,9 +118,8 @@ var cBoxHub = {
         $.connection.hub.qs = 'isCustomerConnected=true';
         $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
         $.connection.hub.start().done(function () {
-            console.log("signalr started")
-			
-			
+            //console.log("signalr started")
+						
 			window.sessionStorage.setItem("lc_customerName", "bạn");
             window.sessionStorage.setItem("lc_isSaveCustomer", true);
             $(".message-form-user").hide();
@@ -168,7 +167,7 @@ var cBoxHub = {
         let tryingToReconnect = false;
 
         $.connection.hub.error(function (error) {
-            console.log('SignalR error ngắt kết nối: ' + error)
+            //console.log('SignalR error ngắt kết nối: ' + error)
             $(".box-disconected").addClass('showing');
             $(".chat-footer").hide();
             tryingToReconnect = true;
@@ -176,17 +175,17 @@ var cBoxHub = {
 
         $.connection.hub.reconnecting(function () {
             tryingToReconnect = true;
-            console.log('SingalR connect đang quá trình kết nối')
+            //console.log('SingalR connect đang quá trình kết nối')
 
         });
 
         $.connection.hub.reconnected(function () {
             tryingToReconnect = false;
-            console.log('SingalR connect thực hiện xong quá trình kết nối')
+            //console.log('SingalR connect thực hiện xong quá trình kết nối')
         });
 
         $.connection.hub.disconnected(function () {
-            console.log('SingalR connect ngắt kết nối')
+            //console.log('SingalR connect ngắt kết nối')
             if ($.connection.hub.lastError) {
                 $(".chat-footer").hide();
                 $(".box-disconected").addClass('showing');
@@ -198,7 +197,7 @@ var cBoxHub = {
                 //intervalReconnectId = setInterval(varyReconnected, 1500);
                 reconnectingTime.start();
                 setTimeout(function () {
-                    console.log('SingalR connect đang khởi động lại')
+                    //console.log('SingalR connect đang khởi động lại')
 
                     // demo bỏ qua setting.isAgentOnline == true
                     $(".chat-footer").show();
@@ -215,6 +214,9 @@ var cBoxHub = {
                         } else {
                             $(".chat-footer").hide();
                         }
+
+                        //demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
+                        $(".chat-footer").show();
                     });
                 }, 5000);		//Restart connection after 5 seconds.       		
             }
@@ -222,24 +224,24 @@ var cBoxHub = {
 
         // gọi Onconnected
         objHub.client.connected = function () {
-            console.log('connected')
+            //console.log('connected')
         }
         // gọi Onconnected
         objHub.client.disconnected = function () {
-            console.log('disconnected')
+            //console.log('disconnected')
         }
         window.addEventListener("offline",
 		  () => console.log("No Internet")
 		);
         window.addEventListener("online", function () {
-            console.log("Connected Interned")
+            //console.log("Connected Interned")
             $(".box-disconected").removeClass('showing');
             $('.box-reconecting').addClass('showing');
             reconnectingTime.start();
 
            // intervalReconnectId = setInterval(varyReconnected, 1500);
             setTimeout(function () {
-                console.log('SingalR connect đang khởi động lại')
+                //console.log('SingalR connect đang khởi động lại')
                 $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
                 $.connection.hub.start().done(function () {
                     // kết nối chat khi agent hoặc bot active
@@ -252,13 +254,16 @@ var cBoxHub = {
                     } else {
                         $(".chat-footer").hide();
                     }
+
+                    //demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
+                    $(".chat-footer").show();
                 });
             }, 5000);
         });
     },
     receivedSignalFromServer: function () {
         objHub.client.receiveMessages = function (channelGroupId, threadId, message, agentId, customerId, agentName, typeUser) {
-            console.log('threadId:' + threadId + '  agentId-agentName' + agentId + ' : ' + message)
+            //console.log('threadId:' + threadId + '  agentId-agentName' + agentId + ' : ' + message)
 
             //var $elementMessage = document.getElementsByClassName('message-item');
             //if ($elementMessage.length <= 1) {
@@ -276,16 +281,16 @@ var cBoxHub = {
                     //remove typing
                     $(".message-item-typing").remove();
                 }
-                console.log('agentId-' + agentId + ' typing')
+                //console.log('agentId-' + agentId + ' typing')
             }
         };
         objHub.client.receiveThreadChat = function (threadId, customerId, conversationId) {
-            console.log('revice- thread' + threadId)
+            //console.log('revice- thread' + threadId)
             CustomerModel.ThreadID = threadId;
         };
         objHub.client.receiveSingalChatWithBot = function (channelGroupId, threadId, customerId, botId, isTransfer) {
             if (isTransfer) {
-                console.log('revice- signal chat with bot' + botId)
+                //console.log('revice- signal chat with bot' + botId)
                 CustomerModel.ThreadID = threadId;
                 setting.isTransferToBot = true;
                 setting.BotID = botId;
@@ -370,7 +375,7 @@ function saveCustomer() {
             }
         },
         error: function (e) {
-            console.log(e)
+            //console.log(e)
         }
     });
 };
@@ -496,9 +501,15 @@ var cBoxMessage = {
         })
 
         $("#input-chat-message").focus(function (e) {
+
+            // Ẩn button menu footer nếu đang hiển thị
+            if ($("._661n_btn_menu_chat").attr('aria-expanded') == 'true') {
+                $("._661n_btn_menu_chat").dropdown('toggle');
+            }
+
             if (!interval_focus_tab_id) {
                 interval_focus_tab_id = setInterval(function () {
-                    console.log("customer click focus");
+                    //console.log("customer click focus");
                     let isFocusTab = true;
                     objHub.server.checkCustomerFocusTabChat(_channelGroupId, CustomerModel.ThreadID, CustomerModel.ID, isFocusTab);
                     clearInterval(interval_focus_tab_id);
@@ -510,7 +521,7 @@ var cBoxMessage = {
             interval_focus_tab_id = 0;
             let isFocusTab = false;
             objHub.server.checkCustomerFocusTabChat(_channelGroupId, CustomerModel.ThreadID, CustomerModel.ID, isFocusTab);
-            console.log("customer ngoài focus")
+            //console.log("customer ngoài focus")
         })
 
 
@@ -558,7 +569,7 @@ var cBoxMessage = {
         $("#btn-submit-chat-message").on('click', function () {
             var edValue = $("#input-chat-message");
             var text = edValue.val();
-            console.log(text)
+            //console.log(text)
             if (text !== "") {
                 insertChat("customer", isValidURLandCodeIcon(text), CustomerModel.Name, '');
 
@@ -576,6 +587,17 @@ var cBoxMessage = {
                 $(".btn_submit").hide();
             }
             return;
+        })
+
+        // footer button menu
+        $('body').on('click', '.footer-menu__btn--postback', function (e) {
+            var dataPostback = $(this).attr('data-postback');
+            var dataText = $(this).html();
+            insertChat("customer", dataText, CustomerModel.Name, "");
+            // gửi tin nhắn
+            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            // bot xử lý
+            new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
     },
     callAction: function () {
@@ -726,7 +748,7 @@ var messageBot = {
             data: params,
             type: 'POST',
             success: function (response) {
-                console.log(response)
+                //console.log(response)
                 if (response.status == 2) {
                     var lstTemplateHtml = [];
                     let date_current = showTimeChat();
@@ -1084,7 +1106,7 @@ function scrollBar() {
 
 window.addEventListener('message', function (event) {
     var widthParent = parseInt(event.data);
-    console.log('init')
+    //console.log('init')
     if (widthParent <= 425) {
         $("._3-8j").css('margin', '0px 0px 0px');
         $("._6atl").css('height', '100%');

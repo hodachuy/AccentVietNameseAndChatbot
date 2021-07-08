@@ -41,6 +41,19 @@ namespace Accent.ConsoleApplication
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
+            string legalCode = "thông tư 62/QĐ-BCDCCTLBHXH abc";
+
+            string rep = Regex.Replace(legalCode.ToLower(), @"(\d{1,5}\/)?\d{1,5}(\-\w+)?\/([a-zA-ZĐ\-]+)", (m) => {
+                if (m.Value.Contains("d"))
+                {
+                    return m.Value.Replace("d", "đ");
+                }
+                return m.Value;
+            }, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+
+            string z = "1";
+
+
             //var lstAIMLBOT = new List<Tuple<Bot, string>>();
 
             //lstAIMLBOT.Add(new Tuple<Bot, string>(new Bot(), "1"));

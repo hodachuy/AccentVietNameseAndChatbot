@@ -54,7 +54,7 @@
             <div class="header">
                 <div class="header-left">
                     <div class="ml-auto">
-                        <div class="dropdown">
+                        @*<div class="dropdown">
                             <a href="#" data-toggle="dropdown" style="color:#FFF">
                                 <svg color="inherit" class="header-chat-options" viewBox="0 0 32 32" aria-hidden="true">
                                     <path d="M8,18c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S9.1,18,8,18z M16,18c-1.1,0-2-0.9-2-2s0.9-2,2-2
@@ -65,7 +65,7 @@
                                 <a class="dropdown-item" href="#">Chuyển đổi không dấu Tiếng Việt</a>
                                 <a class="dropdown-item" href="#">Tắt âm thanh</a>
                             </div>
-                        </div>
+                        </div>*@
                     </div>
                 </div>
                 <div class="header-body" id="header-title">
@@ -545,7 +545,7 @@
                 <div class="_336a">
                     <div class="_4zbw">
                         <!--BUTTON MENU-->
-                        <div class="_661n _661n_btn_menu_chat" tabindex="0" role="button">
+                        <div class="_661n _661n_btn_menu_chat dropdown" tabindex="0" role="button" data-toggle="dropdown">
                             <svg width="24px" height="24px" viewBox="0 0 24 24">
                                 <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" style="fill:rgb(75, 90, 148);">
                                     <g fill="#ea5269" style="fill:rgb(75, 90, 148);">
@@ -556,13 +556,21 @@
                                 </g>
                             </svg>
                         </div>
+                        @if (channelGroupId == 5041)
+                        {
+                            <div class="dropdown-menu dropdown-menu-right" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 10px;min-width: 180px;border-radius: 8px;top:-21px !important;">
+                                <a class="dropdown-item footer-menu__btn--postback" data-postback="postback_card_15169" href="javascript:void(0)">👉 Danh mục</a>
+                                @*<a class="dropdown-item footer-menu__btn--postback" href="javascript:void(0)">Tắt âm thanh</a>*@
+                            </div>
+                        }
+
                         <!--INPUT TEXT-->
                         <div class="_4fwe">
                             <label class="_58ak _3ct8">
                                 <input class="_58al _58al_input_txt" id="input-chat-message" type="text" autocomplete="off" placeholder="Nhập tin nhắn..." value="">
                             </label>
                         </div>
-                        <div class="_kmd">
+                        @*<div class="_kmd">
                             <div class="_4bqf _64mk _64ml btn_submit" id="btn-submit-chat-message" tabindex="0" role="button" style="display:none">
                                 <svg width="22px" height="22px" viewBox="0 0 22 22">
                                     <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
@@ -576,12 +584,12 @@
                                     </g>
                                 </svg>
                             </div>
-                        </div>
+                        </div>*@
                     </div>
                 </div>
             </div>
             <div class="footer" style="background-color:rgb(240, 240, 240);">
-                <p class="text-center" style="font-size:11px;">Powerd by LacViet</p>
+                <p class="text-center" style="font-size:11px; margin: 0.5em 0;">Powerd by LacViet</p>
             </div>
         </div>
     </div>
