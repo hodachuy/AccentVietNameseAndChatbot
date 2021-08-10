@@ -508,7 +508,33 @@ namespace BotProject.Web.API_Webhook
                         await SendMessage(faq, senderId);
                     }
                 }
-                if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0)
+
+                List<string> lstLegalDocs = new List<string>();
+                List<string> lstArticles = new List<string>();
+                if (botId.ToString() == "5041")
+                {
+                    lstLegalDocs = GetModuleApiSearchLegal(text,"keyword", "https://trogiupluat.vn","","get");
+                    if (lstLegalDocs.Count() != 0)
+                    {
+                        foreach (var legal in lstLegalDocs)
+                        {
+                            await SendMessage(legal, senderId);
+                        }
+                    }
+                    else
+                    {
+                        lstArticles = GetModuleApiSearchLegal(text, "keyword", "https://trogiupluat.vn", "", "get");
+                        if (lstArticles.Count() != 0)
+                        {
+                            foreach (var article in lstArticles)
+                            {
+                                await SendMessage(article, senderId);
+                            }
+                        }
+                    }
+                }
+
+                if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0 && lstLegalDocs.Count() == 0 && lstArticles.Count() == 0)
                 {
                     List<string> keyList = new List<string>(_DICTIONARY_NOT_MATCH.Keys);
                     Random rand = new Random();
@@ -923,6 +949,108 @@ namespace BotProject.Web.API_Webhook
             }
             return _lstSymptoms;
         }
+
+        private string apiSearchLegal = "/api/legal/SearchLegalDoc";
+        private string apiSearchArticle = "/api/article/search-relate";
+        private string urlAPISearchLegal = "https://trogiupluat.vn";
+
+        private List<string> GetModuleApiSearchLegal(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstLegalDocs = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result =  ExcuteModuleSearchAPI(apiSearchLegal, param, urlAPISearchLegal, keyAPI, methodeHttp);
+            if (!String.IsNullOrEmpty(result))
+            {
+                var dataListLegal = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<List<LegalApiModel>>(result);
+                if (dataListLegal.Count() != 0)
+                {
+                    string resultTotal = "Tìm thấy " + dataListLegal.Count() + " kết quả liên quan văn bản luật";
+                    lstLegalDocs.Add(FacebookTemplate.GetMessageTemplateText(resultTotal, "{{senderId}}").ToString());
+                    lstLegalDocs.Add(FacebookTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal, "").ToString());
+                }
+            }
+            return lstLegalDocs;
+        }
+
+        private List<string> GetModuleApiSearchArticle(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstArticles = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result = ExcuteModuleSearchAPI(apiSearchArticle, param, urlAPISearchLegal, keyAPI, methodeHttp);
+
+            if (!String.IsNullOrEmpty(result))
+            {
+                var resultArticles = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<Dictionary<string, string>>(result);
+
+                string totalArticle = resultArticles["total"];
+                if (totalArticle != "0")
+                {
+                    string resultTotal = "Tìm thấy " + totalArticle + " kết quả liên quan điều luật";
+                    string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + contentText;
+                    lstArticles.Add(FacebookTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết").ToString());
+                }
+            }
+            return lstArticles;
+        }
+
+        private string ExcuteModuleSearchAPI(string NameFuncAPI, string param, string UrlAPI, string KeySecrectAPI, string Type = "Post")
+        {
+            string result = null;
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(UrlAPI);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                if (!String.IsNullOrEmpty(KeySecrectAPI))
+                {
+                    string[] key = KeySecrectAPI.Split(':');
+                    client.DefaultRequestHeaders.Add(key[0], key[1]);
+                }
+                HttpResponseMessage response = new HttpResponseMessage();
+                param = Uri.UnescapeDataString(param);
+                var dict = HttpUtility.ParseQueryString(param);
+                string json = JsonConvert.SerializeObject(dict.Cast<string>().ToDictionary(k => k, v => dict[v]));
+
+                StringContent httpContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+                try
+                {
+                    if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_POST))
+                    {
+                        response = client.PostAsync(NameFuncAPI, httpContent).Result;
+                    }
+                    else if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_GET))
+                    {
+                        string requestUri = NameFuncAPI + "?" + param;
+                        response = client.GetAsync(requestUri).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return String.Empty;
+                }
+                if (response.IsSuccessStatusCode)
+                {
+                    result = response.Content.ReadAsStringAsync().Result;
+                }
+                else
+                {
+                    result = String.Empty;
+                }
+            }
+            return result;
+        }
+
+
         #endregion
     }
 }

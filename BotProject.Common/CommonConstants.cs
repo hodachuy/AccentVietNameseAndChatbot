@@ -145,4 +145,9 @@ namespace BotProject.Common
         public const string BOT_HISTORY_HANDLE_009 = "Nhấn Chat ADMIN";
     }
 
+    public class ApiDomain
+    {
+        public static string LegalSite = ConfigHelper.ReadString("LegalSiteDomain");
+        public static string MedicalSite = ConfigHelper.ReadString("MedicalSiteDomain");
+    }
 }

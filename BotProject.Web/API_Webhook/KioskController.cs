@@ -195,24 +195,42 @@ namespace BotProject.Web.API_Webhook
                 //_botService.loadAIMLFromFileBinary(pathFileBinary);
 
 
-                // Khởi động lấy "brain" của bot service theo id
-                GetServerAIMLBot(message.botId);
-                // Khởi tạo user theo bot service
-                InitUserByServerAIMLBot(message.senderId);
-
-                var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
-                if (lstAttribute.Count() != 0)
-                {
-                    _dicAttributeUser = new Dictionary<string, string>();
-                    foreach (var attr in lstAttribute)
-                    {
-                        _dicAttributeUser.Add(attr.AttributeKey, attr.AttributeValue);
-                    }
-                }
                 string typeRequest = text.Contains("postback") ? "payload_postback" : "text";
 
+                List<string> lstMsgResponse = new List<string>();
+
                 // get list message response
-                var lstMsgResponse = MessageResponse(text, senderId, botId, typeRequest).Result;
+                try
+                {
+                    // Khởi động lấy "brain" của bot service theo id
+                    GetServerAIMLBot(message.botId);
+
+                    // Khởi tạo user theo bot service
+                    InitUserByServerAIMLBot(message.senderId);
+
+                    var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
+                    if (lstAttribute.Count() != 0)
+                    {
+                        _dicAttributeUser = new Dictionary<string, string>();
+                        foreach (var attr in lstAttribute)
+                        {
+                            _dicAttributeUser.Add(attr.AttributeKey, attr.AttributeValue);
+                        }
+                    }
+
+                    lstMsgResponse = MessageResponse(text, senderId, botId, typeRequest).Result;
+
+                }
+                catch (Exception ex)
+                {
+                    response = request.CreateResponse(HttpStatusCode.OK, new
+                    {
+                        status = "-1",
+                        message = ex.Message.ToString(),
+                        data = new string[] { }
+                    });
+                    return response;
+                }
                 if (lstMsgResponse.Count() == 0)
                 {
                     response = request.CreateResponse(HttpStatusCode.OK, new

@@ -239,7 +239,7 @@
     z-index: 3;
     color: #fff;
     font-size: 1em;
-    height: 56px;
+    height: 40px;
     flex-shrink: 0;
     -webkit-box-flex: 0;
     flex-grow: 0;
@@ -452,18 +452,18 @@
                 }*/
 
                 .chat-block .chat-content .messages .message-item .message-item-content {
-                    /*max-width: 75%;*/
-                    max-width:90%;
-                    background-color: none;
-                    border: 1px solid rgba(0, 0, 0, .10);
-                    padding: 7px 15px;
-                    line-height: 1.5rem;
-                    border-radius: 0.5rem;
-                    position: relative;
-                    /*z-index: 2;*/
-                    margin-bottom: 4px;
-                    overflow-wrap: break-word;
-                    word-break: break-word;
+					/* max-width: 75%; */
+					max-width: 90%;
+					background-color: none;
+					border: 1px solid rgba(0, 0, 0, .10);
+					padding: 5px 10px;
+					line-height: 1.3rem;
+					border-radius: 0.5rem;
+					position: relative;
+					/* z-index: 2; */
+					margin-bottom: 4px;
+					overflow-wrap: break-word;
+					word-break: break-word;
                 }
 
                 .chat-block .chat-content .messages .message-item .message-item-template-generic {

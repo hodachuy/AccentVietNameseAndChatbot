@@ -21,10 +21,11 @@ namespace BotProject.Web
         private AccentService()
         {
             accent = new AccentPredictor();
-            string _path1Gram = PathServer.PathAccent + "news1gram.bin";
-            string _path2Gram = PathServer.PathAccent + "news2grams.bin";
-            string _path1Statistic = PathServer.PathAccent + "_1Statistic";
-            accent.InitNgram2(_path1Gram, _path2Gram, _path1Statistic);
+            string _news1gramPath = PathServer.PathAccent + "news1gram.bin";
+            string _news2gramsPath = PathServer.PathAccent + "news2grams.bin";
+            string _1statisticPath = PathServer.PathAccent + "_1Statistic";
+            string _wordsIncorrectPath = PathServer.PathAccent + "WordsForIncorrect.txt";
+            accent.InitNgram2(_news1gramPath, _news2gramsPath, _1statisticPath, _wordsIncorrectPath);
         }
         public static AccentService SingleInstance
         {

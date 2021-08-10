@@ -478,8 +478,13 @@ var cBoxMessage = {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+
+            if (CustomerModel.ThreadID != "") {
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
+
             // bot xử lý
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
@@ -488,8 +493,11 @@ var cBoxMessage = {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            if (CustomerModel.ThreadID != "") {
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
 
@@ -506,7 +514,9 @@ var cBoxMessage = {
             if ($("._661n_btn_menu_chat").attr('aria-expanded') == 'true') {
                 $("._661n_btn_menu_chat").dropdown('toggle');
             }
-
+            if (CustomerModel.ThreadID == "") {
+                return false;
+            }
             if (!interval_focus_tab_id) {
                 interval_focus_tab_id = setInterval(function () {
                     //console.log("customer click focus");
@@ -520,6 +530,9 @@ var cBoxMessage = {
             clearInterval(interval_focus_tab_id);
             interval_focus_tab_id = 0;
             let isFocusTab = false;
+            if (CustomerModel.ThreadID == "")
+                return false;
+
             objHub.server.checkCustomerFocusTabChat(_channelGroupId, CustomerModel.ThreadID, CustomerModel.ID, isFocusTab);
             //console.log("customer ngoài focus")
         })
@@ -528,6 +541,9 @@ var cBoxMessage = {
         $("#input-chat-message").keyup(function (e) {
             var edValue = $(this);
             var text = edValue.val();
+            if (CustomerModel.ThreadID == "") {
+                return false;
+            }
             if (text.length > 0) {
                 $(".btn_submit").show();
                 if (isTyping == false) {
@@ -548,8 +564,10 @@ var cBoxMessage = {
                 e.preventDefault(e);
                 if (text !== "") {
                     insertChat("customer", isValidURLandCodeIcon(text), CustomerModel.Name, "");
-                    // gửi tin nhắn
-                    objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                    if (CustomerModel.ThreadID != "") {
+                        // gửi tin nhắn
+                        objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                    }
 
                     $(this).val('');
 
@@ -573,8 +591,10 @@ var cBoxMessage = {
             if (text !== "") {
                 insertChat("customer", isValidURLandCodeIcon(text), CustomerModel.Name, '');
 
-                // gửi tin nhắn
-                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                if (CustomerModel.ThreadID != "") {
+                    // gửi tin nhắn
+                    objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                }
 
                 // emty input
                 $("#input-chat-message").val('');
@@ -594,8 +614,13 @@ var cBoxMessage = {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+
+            if (CustomerModel.ThreadID != "") {
+
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
             // bot xử lý
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
@@ -828,8 +853,11 @@ var messageBot = {
             $(this).append($(text).addClass('animated moveUp')).append(scrollBar());
             if (isSendTyping) {
                 new messageBot.renderTemplate('', '').Typing();
-            } 
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.BOT);
+            }
+
+            if (CustomerModel.ThreadID != "") {
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.BOT);
+            }
 
             next();
         });

@@ -329,32 +329,35 @@
 </div>
 
 @section dialogBotJS{
-    <script src="~/static/js/app.js"></script>
-
-    <!--Lacviet-->
-    @*<script>
-        (function (l, a, c, v, i, e, t){
-            a[v] = a[v] || function (){
-                a[v].t =+ new Date();
-                (a[v].q = a[v].q || []).push(arguments);
-            };
-            i = l.createElement('script');
-            var ii = l.getElementsByTagName('script')[0];
-            i.async = 1;
-            i.src = c;
-            i.id = 'lacviet-script';
-            ii.parentNode.insertBefore(i, ii);
-        })(document, window, 'http://localhost:54160/static/js/app.js', 'lacviet');
-        setTimeout(function(){lacviet.load('U2FsdGVkX19hLyZ3+0e7J+6o2nc9UhCOW54+qG73sjSWMip1szuIeYnp+3na+IZW','U2FsdGVkX180mQVdMji5+0ZHrvdmwR2TyyX1k2HwEEWXIaOpc4aUH7HG/jyn1R1KikKAPO07b8EuJ704FPjZ2Q==','U2FsdGVkX1+ZqiM+BCo9X/bxdtZZa4dQrAp49aDY+tM=');},1500)
-        </script>*@
-    <!-- End Lacviet -->
+    @*<script src="~/static/js/app.js"></script>
 
     <script>
         var encryptedUrl = CryptoJS.AES.encrypt(_Host, "Secret Passphrase").toString();
         var encryptedUserID = CryptoJS.AES.encrypt($("#userId").val(), "Secret Passphrase").toString();
         var encryptedBotID = CryptoJS.AES.encrypt($("#botId").val(), "Secret Passphrase").toString();
         lacviet.load('' + encryptedUrl + '', '' + encryptedUserID + '', '' + encryptedBotID + '', 'U2FsdGVkX19D5jsWIYosQVQ4bBWt2cjbzgkJbDAOSB+Igj5G2vGw1bAq+sh1P/Yc')
-    </script>
+    </script>*@
+
+<script>
+            (function (l, a, c, v, i, e, t) {
+                t = new Date().getUTCMilliseconds().toString();
+                c += t;
+                i = l.createElement('script');
+                var ii = l.getElementsByTagName('script')[0];
+                r = false;
+                i.async = 1;
+                i.src = c;
+                i.id = 'lacviet-script';
+                ii.parentNode.insertBefore(i, ii);
+                i.onload = i.onreadystatechange = function () {
+                    if (!r && (!this.readyState || this.readyState == 'complete')) {
+                        r = true;
+                        e();//function callback();
+                    }
+                };
+            })(document, window, 'http://localhost:54160/assets/livechat/app_setting_test.js?v=', 'lacviet', '', function () { lacviet.setup('@Model.BotID') });//group 3019 check y tế bùa
+
+</script>
 }
 
 

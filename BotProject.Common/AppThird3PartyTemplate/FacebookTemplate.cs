@@ -243,6 +243,42 @@ namespace BotProject.Common.AppThird3PartyTemplate
         }
         public static Object GetMessageTemplateGenericByListLegal(string sender, List<LegalApiModel> lstLegalAPI, string urlDetail = "", string patternQuickReply = "", string titleQuickReply = "")
         {
+            if (String.IsNullOrEmpty(patternQuickReply)) {
+                return JObject.FromObject(
+              new
+              {
+                  recipient = new { id = sender },
+                  message = new
+                  {
+                      attachment = new
+                      {
+                          type = "template",
+                          payload = new
+                          {
+                              template_type = "generic",
+                              elements = from q in lstLegalAPI
+                                         select new
+                                         {
+                                             title = (q.Title.Length > 60 ? q.Title.Substring(0, 60) + "..." : q.Title),
+                                             item_url = q.Url,
+                                             image_url = ConfigHelper.ReadString("Domain") + "assets/images/faq_legal.png",
+                                             subtitle = "Văn bản luật",
+                                             buttons = new[]
+                                             {
+                                                             new
+                                                                {
+                                                                   type = "web_url",
+                                                                   url =  q.Url,
+                                                                   title = "Xem văn bản"
+                                                                },
+                                                        }
+                                         }
+                          }
+                      }
+                  }
+              });
+            }
+
             return JObject.FromObject(
               new
               {
@@ -285,6 +321,8 @@ namespace BotProject.Common.AppThird3PartyTemplate
                              }
                   },
               });
+
+
         }
 
     }

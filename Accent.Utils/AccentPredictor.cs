@@ -32,6 +32,8 @@ namespace Accent.Utils
         private static long totalcount2Grams = 400508022;//0;
         private HashSet<string> globalPosibleChanges = new HashSet<string>();
 
+        private static string _wordsIncorrectPath;
+
         static bool isInitialized2Gram;
         static object initLock2Gram = new object();
 
@@ -70,11 +72,12 @@ namespace Accent.Utils
         //    Console.WriteLine("Done!");
         //}
 
-        public void InitNgram2(string path1Gram, string path2Gram, string pathStatistic)
+        public void InitNgram2(string gram1Path, string gram2Path, string statisticPath, string wordsIncorrectPath)
         {
             Console.WriteLine("Loading NGrams...");
             Console.WriteLine(DateTime.Now);
-            loadNGram(path1Gram, path2Gram, pathStatistic);
+            _wordsIncorrectPath = wordsIncorrectPath;
+            loadNGram(gram1Path, gram2Path, statisticPath);
 
             //string filePath1 = @"D:\news1gram.bin";
             //string filePath2 = @"D:\news2grams.bin";
@@ -660,17 +663,30 @@ namespace Accent.Utils
             if (String.IsNullOrEmpty(text))
                 return "";
 
-            var listWordNoCorrect = new Dictionary<string, string>()
-            {
-                {"số hữu","sở hữu"},
-                {"đau đáu","đau đầu"},
-                {"đầm dáng","đảm đang"},
-                {"chào bán","chào bạn"},
-                {"bị đầu tay","tay tôi bị đau"},
-                {"tay tôi bị đầu","tay tôi bị đau"},
-            };
+            //var listWordInCorrect = new Dictionary<string, string>()
+            //{
+            //    {"số hữu","sở hữu"},
+            //    {"đau đáu","đau đầu"},
+            //    {"đầm dáng","đảm đang"},
+            //    {"chào bán","chào bạn"},
+            //    {"bị đầu tay","tay tôi bị đau"},
+            //    {"tay tôi bị đầu","tay tôi bị đau"},
+            //    {"xin cho hội","xin cho hỏi"},
+            //};
 
-            foreach (KeyValuePair<string, string> replacement in listWordNoCorrect)
+            var listWordInCorrect = new Dictionary<string, string>();
+
+            var file = new FileInfo(_wordsIncorrectPath);
+            var words = File.ReadAllLines(file.FullName, Encoding.UTF8);
+
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                var line = words[i].Split('\t');
+                listWordInCorrect.Add(line[0], line[1]);
+            }
+
+            foreach (KeyValuePair<string, string> replacement in listWordInCorrect)
             {
                 text = Regex.Replace(text, replacement.Key, replacement.Value);
             }

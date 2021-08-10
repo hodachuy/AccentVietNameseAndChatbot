@@ -21,6 +21,7 @@ using BotProject.Service.Livechat;
 using System.Xml;
 using System.Web;
 using System.Net.Http.Headers;
+using BotProject.Web.Infrastructure;
 
 namespace BotProject.Web.API
 {
@@ -74,7 +75,24 @@ namespace BotProject.Web.API
             _apiNLR = new ApiQnaNLRService();
 
 
-        }       
+        }
+
+        [Route("test")]
+        [HttpGet]
+        public async Task<HttpResponseMessage> Test(HttpRequestMessage request)
+        {
+            return CreateHttpResponse(request, () =>
+            {
+                HttpResponseMessage response;
+                using (var client = new BaseApiClient("https://jsonplaceholder.typicode.com"))
+                {
+                    var response2 = client.GetAsync("todos/1").Result;
+                }
+                response = request.CreateResponse(HttpStatusCode.OK);
+
+                return response;
+            });
+        }
 
         [Route("getall")]
 		[HttpGet]

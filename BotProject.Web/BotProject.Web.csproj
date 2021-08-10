@@ -897,6 +897,7 @@
     <Content Include="assets\images\whatsaquestion.jpg" />
     <Content Include="assets\images\img-zalo.png" />
     <Content Include="assets\images\ảnh-dịch-vụ-công.jpg" />
+    <Content Include="assets\livechat\app_setting_test.js" />
     <Content Include="assets\livechat\audio\notify-message-chat.mp3" />
     <Content Include="assets\livechat\audio\notify-message-chat.ogg" />
     <Content Include="assets\livechat\css\chatbox-custom.css" />
@@ -914,6 +915,7 @@
     <Content Include="assets\livechat\js\lc_agent.js" />
     <Content Include="assets\livechat\js\lc_chatbox.js" />
     <Content Include="assets\livechat\js\lc_chatbox_legal.js" />
+    <Content Include="assets\livechat\js\lc_chatbox_test.js" />
     <Content Include="assets\livechat\js\lc_chatroom.js" />
     <Content Include="assets\livechat\app_setting.js" />
     <Content Include="assets\livechat\js\lc_customer.js" />
@@ -928,6 +930,7 @@
     <Content Include="File\AIML\config\Substitutions.xml" />
     <Content Include="File\Datasets_Training_Accent\AccentInfo.txt" />
     <Content Include="File\Datasets_Training_Accent\test.txt" />
+    <Content Include="File\Datasets_Training_Accent\WordsForIncorrect.txt" />
     <Content Include="File\Images\Card\07be0196-b52c-404d-9056-093f5bd635c5-banner_resize_3.jpg" />
     <Content Include="File\NLP\StopWord.txt" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
@@ -1123,6 +1126,7 @@
     <Content Include="Views\LcCustomer\Index.cshtml" />
     <Content Include="Views\LcChatBox\Index.cshtml" />
     <Content Include="Views\Test\Index.cshtml" />
+    <Content Include="Views\LcChatBox\Test.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

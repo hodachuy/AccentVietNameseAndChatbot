@@ -2654,6 +2654,7 @@ $(document).ready(function () {
                 //console.log(JSON.stringify(value))
                 tempJsonFB += JSON.stringify(value) + "split"
             })
+            //temJsonFB = tempJsonFB.substring(0, str.length - 5);
             //console.log(tempJsonFB)
         }
 
@@ -2664,6 +2665,7 @@ $(document).ready(function () {
                 //console.log(JSON.stringify(value))
                 tempJsonZalo += JSON.stringify(value) + "split"
             })
+
             //console.log(tempJsonZalo)
         }
 

@@ -34,7 +34,7 @@ namespace BotProject.Web.Infrastructure
 
             using (var requestContent = new StringContent(ConvertToJsonString(input), Encoding.UTF8, MediaTypeJson))
             {
-                using (var response = await _httpClient.PostAsync(url, requestContent))
+                using (var response = await _httpClient.PostAsync(url, requestContent).ConfigureAwait(false))
                 {
                     response.EnsureSuccessStatusCode();
                     return await response.Content.ReadAsStringAsync();
@@ -65,8 +65,7 @@ namespace BotProject.Web.Infrastructure
         public async Task<string> GetAsync(string url)
         {
             EnsureHttpClientCreated();
-
-            using (var response = await _httpClient.GetAsync(url))
+            using (var response = await _httpClient.GetAsync(url).ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
@@ -82,7 +81,7 @@ namespace BotProject.Web.Infrastructure
         {
             EnsureHttpClientCreated();
 
-            using (var response = await _httpClient.PutAsync(url, content))
+            using (var response = await _httpClient.PutAsync(url, content).ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
@@ -93,7 +92,7 @@ namespace BotProject.Web.Infrastructure
         {
             EnsureHttpClientCreated();
 
-            using (var response = await _httpClient.DeleteAsync(url))
+            using (var response = await _httpClient.DeleteAsync(url).ConfigureAwait(false))
             {
                 response.EnsureSuccessStatusCode();
                 return await response.Content.ReadAsStringAsync();
@@ -113,12 +112,16 @@ namespace BotProject.Web.Infrastructure
                 AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip
             };
 
-            _httpClient = new HttpClient(_httpClientHandler, false)
-            {
-                Timeout = _timeout
-            };
+            //_httpClient = new HttpClient(_httpClientHandler, false)
+            //{
+            //    Timeout = _timeout
+            //};
 
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(ClientUserAgent);
+            _httpClient = new HttpClient(_httpClientHandler, false);
+
+            _httpClient.DefaultRequestHeaders.Accept.Clear();
+
+            //_httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(ClientUserAgent);
 
             if (!string.IsNullOrWhiteSpace(_baseUrl))
             {

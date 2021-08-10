@@ -1,6 +1,6 @@
 ﻿//const getSrcOrigin = () => new URL(document.currentScript.src).origin;
-var appDomain = "https://bot.lawcoviet.vn/"
-//var appDomain = "http://localhost:54160/"
+//var appDomain = "https://bot.lawcoviet.vn/"
+var appDomain = "http://localhost:54160/"
 
 var lacviet = {
     setup: function (channelGroupId) {
@@ -20,7 +20,7 @@ var lacviet = {
         var styleDiv = 'z-index:2;position:fixed;bottom:0px;max-width: 100%;max-height:calc(100% - 0px);min-height:0px;min-width: 0px;background-color:transparent; border:0px;overflow:hidden;right: 0px;transition: none 0s ease 0s!important;';
         $("<div id='dialog-form-bot'\"></div>").appendTo("body");
         var html = '',
-        styleIframeCustom = 'style= "width:0px;';
+            styleIframeCustom = 'style= "width:0px;';
         styleIframeCustom += 'height:0px;';//neu mo 100%
         styleIframeCustom += 'min-height: 0px;'
         styleIframeCustom += 'min-width: 0px;'
@@ -42,7 +42,7 @@ var lacviet = {
         //styleIframeCustom += 'top: 30px;'
         styleIframeCustom += 'z-index: 99999;'
         styleIframeCustom += 'transition: none 0s ease 0s!important;"';
-        let url = appDomain + "LcChatBox/Index?channelGroupID=" + channelGroupId;
+        let url = appDomain + "LcChatBox/Test?channelGroupID=" + channelGroupId + "&botId=" + channelGroupId;
         html += '<span style="vertical-align:bottom;width:0px;height:0px">';
         html += '<iframe id="dialog_iframe" class="fb_customer_chat_bounce_out_v2 name="f12691cd05677d" frameborder="0"allowtransparency="true"allowfullscreen="true"scrolling="no"';
         html += 'allow="encrypted-media" src="' + url + '" ' + styleIframeCustom + '"></iframe>';
@@ -175,7 +175,7 @@ eventer(messageEvent, function (e) {
         // có tín hiệu đóng
         $('#dialog_iframe').css('max-height', '0px');
         $("#dialog_iframe").removeClass('fb_customer_chat_bounce_in_v2').addClass('fb_customer_chat_bounce_out_v2');
-       //$('.fb_dialog').click();
+        //$('.fb_dialog').click();
     }
     if (e.data == 'open') {
         $('.fb_dialog').click();

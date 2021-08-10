@@ -1,31 +1,31 @@
 ﻿
-console.log(
-    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
-    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
-    ' (' + jscd.browserVersion + ')\n' +
-    'Mobile: ' + jscd.mobile + '\n' +
-    'Flash: ' + jscd.flashVersion + '\n' +
-    'Cookies: ' + jscd.cookies + '\n' +
-    'Screen Size: ' + jscd.screen + '\n\n' +
-    'Full User Agent: ' + navigator.userAgent + '\n\n' +
-    'IP: ' + ipInfo.ip + '\n' +
-    'City: ' + ipInfo.city + '\n' +
-    'Region: ' + ipInfo.region + '\n' +
-    'Latitude: ' + ipInfo.latitude + '\n' +
-    'Longtitude: ' + ipInfo.longtitude
-);
+//console.log(
+//    'OS: ' + jscd.os + ' ' + jscd.osVersion + '\n' +
+//    'Browser: ' + jscd.browser + ' ' + jscd.browserMajorVersion +
+//    ' (' + jscd.browserVersion + ')\n' +
+//    'Mobile: ' + jscd.mobile + '\n' +
+//    'Flash: ' + jscd.flashVersion + '\n' +
+//    'Cookies: ' + jscd.cookies + '\n' +
+//    'Screen Size: ' + jscd.screen + '\n\n' +
+//    'Full User Agent: ' + navigator.userAgent + '\n\n' +
+//    'IP: ' + ipInfo.ip + '\n' +
+//    'City: ' + ipInfo.city + '\n' +
+//    'Region: ' + ipInfo.region + '\n' +
+//    'Latitude: ' + ipInfo.latitude + '\n' +
+//    'Longtitude: ' + ipInfo.longtitude
+//);
 
-var CustomerModel = {    
+var CustomerModel = {
     ID: _customerId,
     ApplicationChannels: 0, //[0: Web, 1: Facebook, 2: Zalo, 3: Kiosk]
     ChannelGroupID: _channelGroupId,
     ThreadID: '',
-    BotID:'',
+    BotID: '',
     Name: window.sessionStorage.getItem("lc_CustomerName") || '',
     Phone: window.sessionStorage.getItem("lc_CustomerPhone") || '',
     Email: window.sessionStorage.getItem("lc_CustomerEmail") || ''
 };
-console.log(CustomerModel)
+//console.log(CustomerModel)
 var AgentModel = {
     ID: '',
     ChannelGroupID: _channelGroupId,
@@ -53,7 +53,8 @@ var DeviceModel = {
 var setting = {
     isAgentOnline: false,
     isTransferToBot: false,
-    BotID: ''
+    BotID: '',
+    FirstCardID:''
 }
 
 
@@ -71,18 +72,17 @@ var intervalReconnectId,
 var interval_focus_tab_id;
 
 var objHub = $.connection.chatHub;
-
+var firstClick = false;
 $(function () {
     //check agent online
-    setting.isAgentOnline = checkAgentOnline();
-	setting.BotID = checkBotActive().botId;
-	$("#header-title").html('Chatbot');
-    // Init bot Y tế cho demo
-    if (!setting.isAgentOnline) {
-        setting.isTransferToBot = true;
-        setting.BotID = '3019';
-        $("#header-title").html('Y Tế');
-    }
+    setting.isAgentOnline = false;
+
+    // Tạm thời để _channelGroupId thay botId
+    setting.BotID = _botId;
+    $("#header-title").html('Chatbot');
+    setting.isTransferToBot = true;
+
+    setting.FirstCardID = getCardInit().cardId;
 });
 
 $(document).ready(function () {
@@ -94,7 +94,7 @@ $(document).ready(function () {
 var varyReconnected = function intervalFunc() {
     timeReconnecting--;
     document.getElementById("reconeting-time").innerHTML = timeReconnecting;
-    console.log(timeReconnecting);
+    //console.log(timeReconnecting);
     if (timeReconnecting == parseInt("0")) {//timeReconnecting == 0
         clearInterval(intervalReconnectId);
         $('.box-reconecting').removeClass('showing');
@@ -118,59 +118,56 @@ var cBoxHub = {
         $.connection.hub.qs = 'isCustomerConnected=true';
         $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
         $.connection.hub.start().done(function () {
-            console.log("signalr started")
-            if (_isSaveCustomer == 'false') {
-                $(".chat-footer").hide();
-                $(".message-form-user").show();
-            }
-            else {
-                // kết nối chat khi agent hoặc bot active
-                if (setting.isAgentOnline == true) {
-                    $(".chat-footer").show();
-                    objHub.server.connectCustomerToChannelChat(_customerId, _channelGroupId);
-                }
-                else if (setting.isTransferToBot == true) {
-                    $(".chat-footer").show();
-                    new messageBot.renderTemplate('', '').Typing();
-                    new messageBot.getMessage('menu', '', setting.BotID);
-                    //objHub.server.connectCustomerToChannelChat(_customerId, _channelGroupId);
-                }
-                else {
-                    $(".chat-footer").hide();
-                }
-            }
+            //console.log("signalr started")
+
+            window.sessionStorage.setItem("lc_customerName", "bạn");
+            window.sessionStorage.setItem("lc_isSaveCustomer", true);
+            $(".message-form-user").hide();
+            $(".chat-footer").show();
+
+            // if (_isSaveCustomer == 'false') {
+            // $(".chat-footer").hide();
+            // $(".message-form-user").show();
+            // }
+            // else {
+            // // kết nối chat khi agent hoặc bot active
+            // if (setting.isAgentOnline == true) {
+            // $(".chat-footer").show();
+            // objHub.server.connectCustomerToChannelChat(_customerId, _channelGroupId);
+            // }
+            // else if (setting.isTransferToBot == true) {
+            // $(".chat-footer").show();
+            // new messageBot.renderTemplate('', '').Typing();
+            // new messageBot.getMessage('postback_card_15169', '', setting.BotID);
+            // //objHub.server.connectCustomerToChannelChat(_customerId, _channelGroupId);
+            // }
+            // else {
+            // $(".chat-footer").hide();
+            // }
+            // }
 
             // start chat
             $('body').on('click', '#btn-starchat', function (e) {
                 e.preventDefault();
-               autoSaveCustomer();
-            })
-			
-			// auto saveCustomer
-			function autoSaveCustomer(){
-				var customerName = $('#txtCustomerName').val(),
+                var customerName = $('#txtCustomerName').val(),
                     customerEmail = $('#txtCustomerEmail').val(),
                     customerPhone = $('#txtCustomerPhone').val()
-                // if (customerName == '') {
-                    // $('.cNameError').show();
-                    // return false;
-                // }
-                CustomerModel.Name = "Khách";
+                if (customerName == '') {
+                    $('.cNameError').show();
+                    return false;
+                }
+                CustomerModel.Name = customerName;
                 CustomerModel.Email = customerEmail;
                 CustomerModel.Phone = customerPhone;
                 CustomerModel.BotID = setting.BotID;
                 saveCustomer();
-			}
-			
-			// Demo y tế, tạm thời bỏ tính năng nhập thông tin
-			
-			$("#btn-starchat").trigger('click');
+            })
         });
 
         let tryingToReconnect = false;
 
         $.connection.hub.error(function (error) {
-            console.log('SignalR error ngắt kết nối: ' + error)
+            //console.log('SignalR error ngắt kết nối: ' + error)
             $(".box-disconected").addClass('showing');
             $(".chat-footer").hide();
             tryingToReconnect = true;
@@ -178,17 +175,17 @@ var cBoxHub = {
 
         $.connection.hub.reconnecting(function () {
             tryingToReconnect = true;
-            console.log('SingalR connect đang quá trình kết nối')
+            //console.log('SingalR connect đang quá trình kết nối')
 
         });
 
         $.connection.hub.reconnected(function () {
             tryingToReconnect = false;
-            console.log('SingalR connect thực hiện xong quá trình kết nối')
+            //console.log('SingalR connect thực hiện xong quá trình kết nối')
         });
 
         $.connection.hub.disconnected(function () {
-            console.log('SingalR connect ngắt kết nối')
+            //console.log('SingalR connect ngắt kết nối')
             if ($.connection.hub.lastError) {
                 $(".chat-footer").hide();
                 $(".box-disconected").addClass('showing');
@@ -200,7 +197,11 @@ var cBoxHub = {
                 //intervalReconnectId = setInterval(varyReconnected, 1500);
                 reconnectingTime.start();
                 setTimeout(function () {
-                    console.log('SingalR connect đang khởi động lại')
+                    //console.log('SingalR connect đang khởi động lại')
+
+                    // demo bỏ qua setting.isAgentOnline == true
+                    $(".chat-footer").show();
+
                     $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
                     $.connection.hub.start().done(function () {
                         // kết nối chat khi agent hoặc bot active
@@ -213,10 +214,9 @@ var cBoxHub = {
                         } else {
                             $(".chat-footer").hide();
                         }
-						
-						//demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
-						$(".chat-footer").show();
-					
+
+                        //demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
+                        $(".chat-footer").show();
                     });
                 }, 5000);		//Restart connection after 5 seconds.       		
             }
@@ -224,25 +224,24 @@ var cBoxHub = {
 
         // gọi Onconnected
         objHub.client.connected = function () {
-            console.log('connected')
+            //console.log('connected')
         }
         // gọi Onconnected
         objHub.client.disconnected = function () {
-            console.log('disconnected')
+            //console.log('disconnected')
         }
         window.addEventListener("offline",
-		  () => console.log("No Internet")
-		);
+            () => console.log("No Internet")
+        );
         window.addEventListener("online", function () {
-            console.log("Connected Interned")
+            //console.log("Connected Interned")
             $(".box-disconected").removeClass('showing');
             $('.box-reconecting').addClass('showing');
             reconnectingTime.start();
 
-           // intervalReconnectId = setInterval(varyReconnected, 1500);
+            // intervalReconnectId = setInterval(varyReconnected, 1500);
             setTimeout(function () {
-                console.log('SingalR connect đang khởi động lại')
-					
+                //console.log('SingalR connect đang khởi động lại')
                 $.connection.hub.start({ transport: ['longPolling', 'webSockets'] });
                 $.connection.hub.start().done(function () {
                     // kết nối chat khi agent hoặc bot active
@@ -255,16 +254,16 @@ var cBoxHub = {
                     } else {
                         $(".chat-footer").hide();
                     }
-					
-					//demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
-					$(".chat-footer").show();
+
+                    //demo mặc định không có agent trả lời nên để hiện lại ô nhập tin nhắn
+                    $(".chat-footer").show();
                 });
             }, 5000);
         });
     },
     receivedSignalFromServer: function () {
         objHub.client.receiveMessages = function (channelGroupId, threadId, message, agentId, customerId, agentName, typeUser) {
-            console.log('threadId:' + threadId + '  agentId-agentName' + agentId + ' : ' + message)
+            //console.log('threadId:' + threadId + '  agentId-agentName' + agentId + ' : ' + message)
 
             //var $elementMessage = document.getElementsByClassName('message-item');
             //if ($elementMessage.length <= 1) {
@@ -282,21 +281,21 @@ var cBoxHub = {
                     //remove typing
                     $(".message-item-typing").remove();
                 }
-                console.log('agentId-' + agentId + ' typing')
+                //console.log('agentId-' + agentId + ' typing')
             }
         };
-        objHub.client.receiveThreadChat = function (threadId, customerId) {
-            console.log('revice- thread' + threadId)
+        objHub.client.receiveThreadChat = function (threadId, customerId, conversationId) {
+            //console.log('revice- thread' + threadId)
             CustomerModel.ThreadID = threadId;
         };
         objHub.client.receiveSingalChatWithBot = function (channelGroupId, threadId, customerId, botId, isTransfer) {
             if (isTransfer) {
-                console.log('revice- signal chat with bot' + botId)
+                //console.log('revice- signal chat with bot' + botId)
                 CustomerModel.ThreadID = threadId;
                 setting.isTransferToBot = true;
                 setting.BotID = botId;
                 new messageBot.renderTemplate('', '').Typing();
-                new messageBot.getMessage('menu', CustomerModel.ThreadID, setting.BotID);
+                new messageBot.getMessage('postback_card_15169', CustomerModel.ThreadID, setting.BotID);
             } else {
                 setting.isTransferToBot = false;
                 setting.BotID = botId;
@@ -367,7 +366,7 @@ function saveCustomer() {
                 else if (setting.isTransferToBot == true) {
                     $(".chat-footer").show();
                     new messageBot.renderTemplate('', '').Typing();
-                    new messageBot.getMessage('menu', '', setting.BotID);
+                    new messageBot.getMessage('postback_card_15169', '', setting.BotID);
                     //objHub.server.connectCustomerToChannelChat(_customerId, _channelGroupId);
                 }
                 else {
@@ -376,7 +375,7 @@ function saveCustomer() {
             }
         },
         error: function (e) {
-            console.log(e)
+            //console.log(e)
         }
     });
 };
@@ -430,6 +429,29 @@ var checkBotActive = function () {
     return chatBot;
 }
 
+var getCardInit = function () {
+    var card = {
+        cardId : ''
+    };
+
+    var params = {
+        botId: _botId
+    }
+    //params = JSON.stringify(params);
+    $.ajax({
+        url: _Host + "api/setting/getbybotid",
+        contentType: 'application/json; charset=utf-8',
+        data: params,
+        async: false,
+        global: false,
+        type: 'GET',
+        success: function (data) {
+            card.cardId = data.CardID;
+        }
+    })
+    return card;
+}
+
 
 // EVENT BOX
 var cBoxMessage = {
@@ -445,9 +467,9 @@ var cBoxMessage = {
         $("body").on('click', '.btn_next_genetics', function () {
             var $form = $(this).closest('.message-item-genetics'),
                 currentIndex = $form.find($('div.message-container')).attr('index');
-                minIndex = (parseInt(currentIndex) + 1),
+            minIndex = (parseInt(currentIndex) + 1),
                 maxIndex = $form.find($('div.message-item-template-generic')).length - 1;
-                $form.find($('div.message-container')).attr('index', minIndex);
+            $form.find($('div.message-container')).attr('index', minIndex);
 
             var widthByItem = -272 * minIndex,
                 withScroll = '' + widthByItem + 'px';
@@ -479,8 +501,13 @@ var cBoxMessage = {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+
+            if (CustomerModel.ThreadID != "") {
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
+
             // bot xử lý
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
@@ -489,15 +516,33 @@ var cBoxMessage = {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            if (CustomerModel.ThreadID != "") {
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
 
+        // click link file
+        $('body').on('click', '.btn-link-file', function (e) {
+            let link = $(this).attr('href');
+            let message = "OPEN_WORD_OFFICE:" + $(this).attr('href');
+            parent.postMessage(message, "*");
+        })
+
         $("#input-chat-message").focus(function (e) {
+
+            // Ẩn button menu footer nếu đang hiển thị
+            if ($("._661n_btn_menu_chat").attr('aria-expanded') == 'true') {
+                $("._661n_btn_menu_chat").dropdown('toggle');
+            }
+            if (CustomerModel.ThreadID == "") {
+                return false;
+            }
             if (!interval_focus_tab_id) {
                 interval_focus_tab_id = setInterval(function () {
-                    console.log("customer click focus");
+                    //console.log("customer click focus");
                     let isFocusTab = true;
                     objHub.server.checkCustomerFocusTabChat(_channelGroupId, CustomerModel.ThreadID, CustomerModel.ID, isFocusTab);
                     clearInterval(interval_focus_tab_id);
@@ -508,14 +553,20 @@ var cBoxMessage = {
             clearInterval(interval_focus_tab_id);
             interval_focus_tab_id = 0;
             let isFocusTab = false;
+            if (CustomerModel.ThreadID == "")
+                return false;
+
             objHub.server.checkCustomerFocusTabChat(_channelGroupId, CustomerModel.ThreadID, CustomerModel.ID, isFocusTab);
-            console.log("customer ngoài focus")
+            //console.log("customer ngoài focus")
         })
 
 
         $("#input-chat-message").keyup(function (e) {
             var edValue = $(this);
             var text = edValue.val();
+            if (CustomerModel.ThreadID == "") {
+                return false;
+            }
             if (text.length > 0) {
                 $(".btn_submit").show();
                 if (isTyping == false) {
@@ -536,8 +587,10 @@ var cBoxMessage = {
                 e.preventDefault(e);
                 if (text !== "") {
                     insertChat("customer", isValidURLandCodeIcon(text), CustomerModel.Name, "");
-                    // gửi tin nhắn
-                    objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                    if (CustomerModel.ThreadID != "") {
+                        // gửi tin nhắn
+                        objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                    }
 
                     $(this).val('');
 
@@ -557,12 +610,14 @@ var cBoxMessage = {
         $("#btn-submit-chat-message").on('click', function () {
             var edValue = $("#input-chat-message");
             var text = edValue.val();
-            console.log(text)
+            //console.log(text)
             if (text !== "") {
                 insertChat("customer", isValidURLandCodeIcon(text), CustomerModel.Name, '');
 
-                // gửi tin nhắn
-                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                if (CustomerModel.ThreadID != "") {
+                    // gửi tin nhắn
+                    objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+                }
 
                 // emty input
                 $("#input-chat-message").val('');
@@ -576,14 +631,19 @@ var cBoxMessage = {
             }
             return;
         })
-		
-		// footer button menu
+
+        // footer button menu
         $('body').on('click', '.footer-menu__btn--postback', function (e) {
             var dataPostback = $(this).attr('data-postback');
             var dataText = $(this).html();
             insertChat("customer", dataText, CustomerModel.Name, "");
-            // gửi tin nhắn
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+
+            if (CustomerModel.ThreadID != "") {
+
+                // gửi tin nhắn
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, dataText, "", CustomerModel.ID, "", TYPE_USER_CONNECT.CUSTOMER);
+            }
+
             // bot xử lý
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
@@ -736,6 +796,7 @@ var messageBot = {
             data: params,
             type: 'POST',
             success: function (response) {
+                console.log(response)
                 if (response.status == 2) {
                     var lstTemplateHtml = [];
                     let date_current = showTimeChat();
@@ -749,9 +810,9 @@ var messageBot = {
                                 let tempImage = new messageBot.renderTemplate(date_current, '').Image(value.message.attachment.payload.url);
                                 lstTemplateHtml.push(tempImage);
                             }
-							if (value.message.attachment.type == "file") {
-                                let tempFile = new messageBot.renderTemplate(date_current, '').File(value.message.attachment.payload.url);
-                                lstTemplateHtml.push(tempFile);
+                            if (value.message.attachment.type == "file") {
+                                let tempImage = new messageBot.renderTemplate(date_current, '').File(value.message.attachment.payload.url);
+                                lstTemplateHtml.push(tempImage);
                             }
                             if (value.message.attachment.type == "template") {
                                 if (value.message.attachment.payload.template_type == "button") {
@@ -770,7 +831,7 @@ var messageBot = {
                                     $.each(lstGeneric, function (index, value) {
                                         let genetic = {};
                                         genetic.title = value.title;
-                                        genetic.item_url = value.item_url//(value.item_url == "" ? "" : value.item_url.substr(value.item_url.indexOf('://') + 3));
+                                        genetic.item_url = value.item_url;//(value.item_url == "" ? "" : value.item_url.substr(value.item_url.indexOf('://') + 3));
                                         genetic.image_url = value.image_url; //_Host + 
                                         genetic.subtitle = value.subtitle;
                                         var lstButton = value.buttons;
@@ -815,8 +876,11 @@ var messageBot = {
             $(this).append($(text).addClass('animated moveUp')).append(scrollBar());
             if (isSendTyping) {
                 new messageBot.renderTemplate('', '').Typing();
-            } 
-            objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.BOT);
+            }
+
+            if (CustomerModel.ThreadID != "") {
+                objHub.server.sendMessage(_channelGroupId, CustomerModel.ThreadID, text, "", CustomerModel.ID, "", TYPE_USER_CONNECT.BOT);
+            }
 
             next();
         });
@@ -827,11 +891,7 @@ var messageBot = {
         templateAvatar += '<div class="message-avatar-customer">';
         templateAvatar += '<div class="pr-3">';
         templateAvatar += '<span class ="message-avatar-item avatar">';
-        if (setting.BotID = '3019') {
-            templateAvatar += '<img src="' + _Host + 'assets/livechat/images/bot-yte-icon.png" class="rounded-circle" alt="image">';
-        } else {
-            templateAvatar += '<img src="' + _Host + 'assets/images/logo/icon-bot-lc.png" class="rounded-circle" alt="image">';
-        }
+        templateAvatar += '<img src="' + _Host + 'assets/images/logo/icon-bot-lc.png" class="rounded-circle" alt="image">';
         templateAvatar += '</span>';
         templateAvatar += '</div>';
         templateAvatar += '</div>';
@@ -870,112 +930,112 @@ var messageBot = {
             tmpText += '</div>';
             $('#message-content').append(tmpText);//$('#message-content').append(tmpText).append(scrollBar())
         },
-        this.Text = function (text) {
-            var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
-            tmpText += messageBot.getIcon('');
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
+            this.Text = function (text) {
+                var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
+                tmpText += messageBot.getIcon('');
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content">' + text + '</div>';
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.File = function (urlFile) {
+                let iconFile = '<i style="color:#007bff" class="fa fa-file"></i>';
+                let host = _Host + "File/Document/";
+                let fileName = urlFile.replace(host, "");
+                let fileExtension = fileName.split('.').pop();
+                if (fileExtension == "docx" || fileExtension == "doc") {
+                    iconFile = '<i style="color:#007bff" class="fa fa-file-word"></i>';
+                }
+
+                if (fileExtension == "pdf") {
+                    iconFile = '<i style="color:red" class="fa fa-file-pdf"></i>';
+                }
+
+                var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
+                tmpText += messageBot.getIcon('');
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content"> ' + iconFile + ' <a class="btn-link-file" href="' + urlFile + '"> ' + fileName + '</a></div>';
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.Image = function (urlImage) {
+                var tmpText = '<div class="message-item {bot} message-item-image clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <img src="' + urlImage + '"/>';//' + _Host + '
+                tmpText += '                </div>';
+                tmpText += '</div>';
+                return tmpText;
+            },
+            this.TextAndButton = function (text, calbackButton) {
+                var tmpText = '<div class="message-item {bot} message-item-text-button clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '<div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
+                tmpText += '                    <div class="message-item-content">';
+                tmpText += '<span>' + text + '</span>';
+                tmpText += calbackButton();
                 tmpText += '                    </div>';
-            }
-            tmpText += '                    <div class="message-item-content">' + text + '</div>';
-            tmpText += '                </div>';
-            tmpText += '</div>';
-            return tmpText;
-        },
-		this.File = function (urlFile) {
-			let iconFile = '<i style="color:#007bff" class="fa fa-file"></i>';
-			let host = _Host + "File/Document/";
-			let fileName = urlFile.replace(host,"");
-			let fileExtension = fileName.split('.').pop();
-			if(fileExtension == "docx" || fileExtension == "doc"){
-				iconFile = '<i style="color:#007bff" class="fa fa-file-word"></i>';
-			}
-			
-			if(fileExtension == "pdf"){
-				iconFile = '<i style="color:red" class="fa fa-file-pdf"></i>';
-			}
-			
-            var tmpText = '<div class="message-item {bot} message-item-text clearfix">';
-            tmpText += messageBot.getIcon('');
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "5041") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
-            tmpText += '                    <div class="message-item-content"> '+iconFile+' <a href="'+urlFile+'"> ' + fileName + '</a></div>';
-            tmpText += '                </div>';
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.Image = function (urlImage) {
-            var tmpText = '<div class="message-item {bot} message-item-image clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
-            tmpText += '                    <img src="' + urlImage + '"/>';//' + _Host + '
-            tmpText += '                </div>';
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.TextAndButton = function (text, calbackButton) {
-            var tmpText = '<div class="message-item {bot} message-item-text-button clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '<div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
-            tmpText += '                    <div class="message-item-content">';
-            tmpText += '<span>' + text + '</span>';
-            tmpText += calbackButton();
-            tmpText += '                    </div>';
-            tmpText += '  </div>';
-            tmpText += '  </div>';
-            return tmpText;
-        },
-        this.ContainerGeneric = function (templateGenericIndex, genericTotal) {
-            var tmpText = '<div class="message-item {bot} message-item-genetics clearfix">';
-            tmpText += messageBot.getIcon(avatarBot);
-            tmpText += '     <div class="message-body">';
-            if (setting.BotID != "3019") {
-                tmpText += '                    <div>';
-                tmpText += '                        <div class="message-align">';
-                tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
-                tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-            }
+                tmpText += '  </div>';
+                tmpText += '  </div>';
+                return tmpText;
+            },
+            this.ContainerGeneric = function (templateGenericIndex, genericTotal) {
+                var tmpText = '<div class="message-item {bot} message-item-genetics clearfix">';
+                tmpText += messageBot.getIcon(avatarBot);
+                tmpText += '     <div class="message-body">';
+                if (setting.BotID != "5041") {
+                    tmpText += '                    <div>';
+                    tmpText += '                        <div class="message-align">';
+                    tmpText += '                            <span class="message-user-name font-size-08">Bot </span>';
+                    tmpText += '                            <span class="message-user-time font-size-08">' + date_current + '</span>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                }
 
 
 
-            tmpText += '                <div class="message-container" index="0">';//style="padding-top:15px;"
-            tmpText += '                                   <div class="message-template" style="left: 0;position: relative;transition: left 500ms ease-out;white-space: nowrap; display: flex; width: 100%; flex-direction: row;">';
-            tmpText += templateGenericIndex;
-            tmpText += '                                   </div>';
-            tmpText += '                </div>';
-            tmpText += '     </div>';
-            if (genericTotal > 1) {
-                tmpText += ` <a class="btn_back_genetics _32rk _32rg _1cy6" href="#" style="display: none;">
+                tmpText += '                <div class="message-container" index="0">';//style="padding-top:15px;"
+                tmpText += '                                   <div class="message-template" style="left: 0;position: relative;transition: left 500ms ease-out;white-space: nowrap; display: flex; width: 100%; flex-direction: row;">';
+                tmpText += templateGenericIndex;
+                tmpText += '                                   </div>';
+                tmpText += '                </div>';
+                tmpText += '     </div>';
+                if (genericTotal > 1) {
+                    tmpText += ` <a class="btn_back_genetics _32rk _32rg _1cy6" href="#" style="display: none;">
                                 <div direction="forward" class="_10sf _5x5_">
                                     <div class="_5x6d">
                                         <div class="_3bwv _3bww">
@@ -1001,89 +1061,89 @@ var messageBot = {
                                     </div>
                                 </div>
                             </a>`;
-            }
-            tmpText += '</div>';
-            return tmpText;
-        },
-        this.GenericIndex = function (generic, calbackButton) {
-            var tmpText = '<div class="message-item-template-generic">';
-            tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
-            tmpText += '                                </div>';
-            tmpText += '                                <div class="message-template-generic-container _6j2g">';
-            tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
-            tmpText += '                                        ' + generic.title + ''
-            tmpText += '                                    </div>';
-            tmpText += '                                    <div class="message-generic-subtitle _6j0u _4ik4">';
-            tmpText += '                                        <div>';
-            tmpText += '                                            ' + generic.subtitle + ''
-            tmpText += '                                        </div>';
-            tmpText += '                                    </div>';
-            tmpText += '                                    <div class="message-generic-sublink _6j0y _4ik4">';
-            tmpText += '                                        <a href="' + generic.item_url + '" target="_blank">';
-            tmpText += '                                            ' + generic.item_url + ''
-            tmpText += '                                        </a>';
-            tmpText += '                                    </div>';
-            tmpText += '                                </div>';
-            tmpText += calbackButton();
-            tmpText += '  </div>';
-            return tmpText;
-        },
-        this.Button = function (lstButton) {
-            var tmpText = '';
-            if (lstButton.length > 0) {
-                tmpText = '<div class="message-item-button">';
-                $.each(lstButton, function (index, value) {
-                    if (value.type == "postback") {
-                        tmpText += '<a class="message-btn-postback lc-6qcmqf" data-postback="' + value.payload + '">' + value.title + '</a>';
-                    }
-                    if (value.type == "web_url") {
-                        tmpText += '<a href="' + value.url + '" class="message-btn-link lc-6qcmqf" target="_blank">' + value.title + '</a>';
-                    }
-                })
+                }
                 tmpText += '</div>';
-            }
-            return tmpText;
-        },
-        this.QuickReply = function (lstQuickReply) {
-            var tmpText = '        <div class="message-quickreply clearfix">';
-            tmpText += '                <div class="message-quickreply-container">';
-            tmpText += '                    <div class="message-quickreply-item" style="position:relative;" index="2">';
-            $.each(lstQuickReply, function (index, value) {
-                tmpText += '                        <button value="0" class="btn-quickreply" data-postback="' + value.payload + '">' + value.title + '</button>';
-            })
-            tmpText += '                    </div>';
-            tmpText += '                </div>';
-            if (lstQuickReply.length > 3) {
-                tmpText += '                <a class="_32rk _32rg _1cy6  btn_back_quickreply" href="#" style="display: none;">';
-                tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
-                tmpText += '                        <div class="_5x6d">';
-                tmpText += '                            <div class="_3bwv _3bww">';
-                tmpText += '                                <div class="_3bwy">';
-                tmpText += '                                    <div class="_3bwx">';
-                tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG2 sx_c4c7bc" alt=""></i>';
+                return tmpText;
+            },
+            this.GenericIndex = function (generic, calbackButton) {
+                var tmpText = '<div class="message-item-template-generic">';
+                tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
+                tmpText += '                                </div>';
+                tmpText += '                                <div class="message-template-generic-container _6j2g">';
+                tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
+                tmpText += '                                        ' + generic.title + ''
+                tmpText += '                                    </div>';
+                tmpText += '                                    <div class="message-generic-subtitle _6j0u _4ik4">';
+                tmpText += '                                        <div>';
+                tmpText += '                                            ' + generic.subtitle + ''
+                tmpText += '                                        </div>';
+                tmpText += '                                    </div>';
+                tmpText += '                                    <div class="message-generic-sublink _6j0y _4ik4">';
+                tmpText += '                                        <a href="' + generic.item_url + '" target="_blank">';
+                tmpText += '                                            ' + generic.item_url + ''
+                tmpText += '                                        </a>';
                 tmpText += '                                    </div>';
                 tmpText += '                                </div>';
-                tmpText += '                            </div>';
-                tmpText += '                        </div>';
+                tmpText += calbackButton();
+                tmpText += '  </div>';
+                return tmpText;
+            },
+            this.Button = function (lstButton) {
+                var tmpText = '';
+                if (lstButton.length > 0) {
+                    tmpText = '<div class="message-item-button">';
+                    $.each(lstButton, function (index, value) {
+                        if (value.type == "postback") {
+                            tmpText += '<a class="message-btn-postback lc-6qcmqf" data-postback="' + value.payload + '">' + value.title + '</a>';
+                        }
+                        if (value.type == "web_url") {
+                            tmpText += '<a href="' + value.url + '" class="message-btn-link lc-6qcmqf" target="_blank">' + value.title + '</a>';
+                        }
+                    })
+                    tmpText += '</div>';
+                }
+                return tmpText;
+            },
+            this.QuickReply = function (lstQuickReply) {
+                var tmpText = '        <div class="message-quickreply clearfix">';
+                tmpText += '                <div class="message-quickreply-container">';
+                tmpText += '                    <div class="message-quickreply-item" style="position:relative;" index="2">';
+                $.each(lstQuickReply, function (index, value) {
+                    tmpText += '                        <button value="0" class="btn-quickreply" data-postback="' + value.payload + '">' + value.title + '</button>';
+                })
                 tmpText += '                    </div>';
-                tmpText += '                </a>';
-                tmpText += '                <a class="_32rk _32rh _1cy6  btn_next_quickreply" href="#" style="display: block;">';
-                tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
-                tmpText += '                        <div class="_5x6d">';
-                tmpText += '                            <div class="_3bwv _3bww">';
-                tmpText += '                                <div class="_3bwy">';
-                tmpText += '                                    <div class="_3bwx">';
-                tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG3 sx_dbbd74" alt=""></i>';
-                tmpText += '                                    </div>';
-                tmpText += '                                </div>';
-                tmpText += '                            </div>';
-                tmpText += '                        </div>';
-                tmpText += '                    </div>';
-                tmpText += '                </a>';
-                tmpText += '            </div>';
+                tmpText += '                </div>';
+                if (lstQuickReply.length > 3) {
+                    tmpText += '                <a class="_32rk _32rg _1cy6  btn_back_quickreply" href="#" style="display: none;">';
+                    tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
+                    tmpText += '                        <div class="_5x6d">';
+                    tmpText += '                            <div class="_3bwv _3bww">';
+                    tmpText += '                                <div class="_3bwy">';
+                    tmpText += '                                    <div class="_3bwx">';
+                    tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG2 sx_c4c7bc" alt=""></i>';
+                    tmpText += '                                    </div>';
+                    tmpText += '                                </div>';
+                    tmpText += '                            </div>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                    tmpText += '                </a>';
+                    tmpText += '                <a class="_32rk _32rh _1cy6  btn_next_quickreply" href="#" style="display: block;">';
+                    tmpText += '                    <div direction="forward" class="_10sf _5x5_">';
+                    tmpText += '                        <div class="_5x6d">';
+                    tmpText += '                            <div class="_3bwv _3bww">';
+                    tmpText += '                                <div class="_3bwy">';
+                    tmpText += '                                    <div class="_3bwx">';
+                    tmpText += '                                        <i class="_3-8w img sp_RQ3p_x3xMG3 sx_dbbd74" alt=""></i>';
+                    tmpText += '                                    </div>';
+                    tmpText += '                                </div>';
+                    tmpText += '                            </div>';
+                    tmpText += '                        </div>';
+                    tmpText += '                    </div>';
+                    tmpText += '                </a>';
+                    tmpText += '            </div>';
+                }
+                return tmpText;
             }
-            return tmpText;
-        }
     }
 }
 
@@ -1093,12 +1153,19 @@ function scrollBar() {
 
 window.addEventListener('message', function (event) {
     var widthParent = parseInt(event.data);
-    console.log('su kien')
+    //console.log('init')
     if (widthParent <= 425) {
         $("._3-8j").css('margin', '0px 0px 0px');
         $("._6atl").css('height', '100%');
         $("._6atl").css('width', event.data);
         $("._6ati").css('height', '100%');
         $("._6ati").css('width', event.data);
+    }
+
+    // Khi click ô chatbox bên ngoài sẽ gửi sự kiến tới khung chat
+    if (firstClick == false) {
+        new messageBot.renderTemplate('', '').Typing();
+        new messageBot.getMessage('postback_card_' + setting.FirstCardID, '', setting.BotID);
+        firstClick = true;
     }
 }, false);

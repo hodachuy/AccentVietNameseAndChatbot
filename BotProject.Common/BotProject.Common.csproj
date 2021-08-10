@@ -79,6 +79,10 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ApiService\BaseApiService.cs" />
+    <Compile Include="ApiService\LegalSite\IArticleService.cs" />
+    <Compile Include="ApiService\LegalSite\ILegalDocSerivce.cs" />
+    <Compile Include="ApiService\LegalSite\IQuestionAnswerService.cs" />
     <Compile Include="AppThird3PartyTemplate\FacebookTemplate.cs" />
     <Compile Include="AppThird3PartyTemplate\WebAppTemplate.cs" />
     <Compile Include="AppThird3PartyTemplate\ZaloTemplate.cs" />
@@ -152,7 +156,9 @@
       <LastGenOutput>Reference.cs</LastGenOutput>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="ApiService\MedicalSite\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
