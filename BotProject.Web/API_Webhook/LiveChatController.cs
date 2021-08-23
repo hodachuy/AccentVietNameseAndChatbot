@@ -7,11 +7,13 @@ using BotProject.Model.Models;
 using BotProject.Service;
 using BotProject.Web.Infrastructure.Core;
 using BotProject.Web.Infrastructure.Extensions;
+using BotProject.Web.Infrastructure.Log4Net;
 using BotProject.Web.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -127,6 +129,44 @@ namespace BotProject.Web.API_Webhook
             _plUserDb = new ApplicationPlatformUser();
         }
 
+        /// <summary>
+        /// Import Image
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [Route("import-audio")]
+        [HttpPost]
+        public HttpResponseMessage ImportAudio(HttpRequestMessage request)
+        {
+            return CreateHttpResponse(request, () =>
+            {
+                HttpResponseMessage response = null;
+                try
+                {
+                    var file = HttpContext.Current.Request.Files[0];
+                    if (file.ContentLength > 0)
+                    {
+                        Guid id = Guid.NewGuid();
+                        string fileName = id + ".wav";
+
+                        string audioFolder = ConfigurationManager.AppSettings["AudioPath"].ToString();
+                        string audioFile = Path.Combine(audioFolder + "/" + fileName);
+                        file.SaveAs(audioFile);
+                        response = request.CreateResponse(HttpStatusCode.OK, new { status = true, data = "File/Audio/"+fileName });
+                    }
+                    else
+                    {
+                        response = request.CreateResponse(HttpStatusCode.OK, new { status = false});
+                    }
+                }
+                catch(Exception ex)
+                {
+                    response = request.CreateResponse(HttpStatusCode.OK, new { status = false });
+                }
+                return response;
+            });
+        }
+
         [HttpGet]
         [Route("getStarted")]
         public async Task<HttpResponseMessage> GetStarted(HttpRequestMessage request, int botId)
@@ -165,6 +205,7 @@ namespace BotProject.Web.API_Webhook
                     });
                     return response;
                 }
+                text = Regex.Replace(text, @"<(.|\n)*?>", "").Trim();
                 if (String.IsNullOrEmpty(message.botId))
                 {
                     response = request.CreateResponse(HttpStatusCode.OK, new
@@ -186,56 +227,64 @@ namespace BotProject.Web.API_Webhook
                     return response;
                 }
 
-                //var botDb = _botDbService.GetByID(botId);
-                //var settingDb = _settingService.GetSettingByBotID(botId);
-                //var systemConfig = _settingService.GetListSystemConfigByBotId(botId);
-
-                //var lstAIML = _aimlFileService.GetByBotId(botId);
-                ////var lstAIMLVm = Mapper.Map<IEnumerable<AIMLFile>, IEnumerable<AIMLViewModel>>(lstAIML);
-                //_botService.loadAIMLFile(lstAIML, botId.ToString());
-
-                // Khởi động lấy "brain" của bot service theo id
-                GetServerAIMLBot(message.botId);
-                // Khởi tạo user theo bot service
-                InitUserByServerAIMLBot(message.senderId);
-
-                var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
-                if (lstAttribute.Count() != 0)
-                {
-                    _dicAttributeUser = new Dictionary<string, string>();
-                    foreach (var attr in lstAttribute)
-                    {
-                        _dicAttributeUser.Add(attr.AttributeKey, attr.AttributeValue);
-                    }
-                }
-
                 string typeRequest = text.Contains("postback") ? "payload_postback" : "text";
+                List<string> lstMsgResponse = new List<string>();
 
                 // get list message response
-                var lstMsgResponse = MessageResponse(text, senderId, botId, typeRequest).Result;
-                if (lstMsgResponse.Count() == 0)
+                try
                 {
+                    // Khởi động lấy "brain" của bot service theo id
+                    GetServerAIMLBot(message.botId);
+
+                    // Khởi tạo user theo bot service
+                    InitUserByServerAIMLBot(message.senderId);
+
+                    var lstAttribute = _attributeService.GetListAttributePlatform(senderId, botId).ToList();
+                    if (lstAttribute.Count() != 0)
+                    {
+                        _dicAttributeUser = new Dictionary<string, string>();
+                        foreach (var attr in lstAttribute)
+                        {
+                            _dicAttributeUser.Add(attr.AttributeKey, attr.AttributeValue);
+                        }
+                    }
+
+                    lstMsgResponse = MessageResponse(text, senderId, botId, typeRequest).Result;
+                    if (lstMsgResponse.Count() == 0)
+                    {
+                        response = request.CreateResponse(HttpStatusCode.OK, new
+                        {
+                            status = "3",
+                            message = "Không có dữ liệu",
+                            data = new string[] { }
+                        });
+                        return response;
+                    }
+                    List<dynamic> lstResult = new List<dynamic>();
+                    foreach (var msg in lstMsgResponse)
+                    {
+                        var result = JsonConvert.DeserializeObject<dynamic>(msg);
+                        lstResult.Add(result);
+                    }
                     response = request.CreateResponse(HttpStatusCode.OK, new
                     {
-                        status = "3",
-                        message = "Không có dữ liệu",
-                        data = new string[] { }
+                        status = "2",
+                        message = "Thành công",
+                        data = lstResult
                     });
                     return response;
                 }
-                List<dynamic> lstResult = new List<dynamic>();
-                foreach (var msg in lstMsgResponse)
+                catch (Exception ex)
                 {
-                    var result = JsonConvert.DeserializeObject<dynamic>(msg);
-                    lstResult.Add(result);
-                }
-                response = request.CreateResponse(HttpStatusCode.OK, new
-                {
-                    status = "2",
-                    message = "Thành công",
-                    data = lstResult
-                });
-                return response;
+                    BotLog.Error(ex.StackTrace + " " + ex.InnerException.Message + ex.Message);
+                    response = request.CreateResponse(HttpStatusCode.OK, new
+                    {
+                        status = "3",
+                        message = ex.Message.ToString(),
+                        data = new string[] { }
+                    });
+                    return response;
+                }                             
             });
         }
 
@@ -289,16 +338,82 @@ namespace BotProject.Web.API_Webhook
                 // Thêm dấu tiếng việt
                 bool isActive = true;
                 text = text.Replace("Chat với chuyên viên", "trò chuyện với chuyên viên");
-                string textAccentVN = GetPredictAccentVN(text, isActive);
-                if (!String.IsNullOrEmpty(textAccentVN))
+
+                if (text.Contains("File/Audio"))
                 {
-                    if (textAccentVN != text)
+                    string audioFile = text.Replace(ConfigurationManager.AppSettings["Domain"]+"File/Audio/", ConfigurationManager.AppSettings["AudioPath"].ToString());
+                    string rsAudioToTextJson = "";
+                    try
                     {
-                        string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", senderId).ToString();
-                        await SendMessage(msg, senderId);
+                        // xem lại tại sao gọi await SpeechReconitionVNService.ConvertSpeechToTextAsync(urlAudio);
+                        // bên này bị khóa thread sau, zalo fb thì không
+                        // nguyên nhân có thể tại hàm trả về message ở Receive
+                        rsAudioToTextJson = SpeechReconitionVNService.ConvertSpeechToText(audioFile, true);
                     }
-                    text = textAccentVN;
+                    catch(Exception ex)
+                    {
+                        BotLog.Error("Error ConvertSpeechToText " + ex.Message);
+                    }
+                                        
+                    if (String.IsNullOrEmpty(rsAudioToTextJson))
+                    {
+                        return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                    }
+
+                    dynamic stuff = JsonConvert.DeserializeObject(rsAudioToTextJson);
+                    string status = stuff.status;
+                    if (status == "0")
+                    {
+                        text = stuff.hypotheses[0].utterance;
+                        if (!String.IsNullOrEmpty(text))
+                        {
+                            string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + text, senderId).ToString();
+                            await SendMessage(meanTextFromAudio, senderId);
+                            text = Regex.Replace(text, @"\.", "");
+                        }
+                        else
+                        {
+                            return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                        }
+                    }
+                    else if (status == "1")
+                    {
+                        string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Không nhận được tín hiệu âm thanh", senderId).ToString();
+                        await SendMessage(meanTextFromAudio, senderId);
+                        return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                    }
+                    else if (status == "2")
+                    {
+                        string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Xử lý âm thanh bị hủy", senderId).ToString();
+                        await SendMessage(meanTextFromAudio, senderId);
+                        return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                    }
+                    else if (status == "9")
+                    {
+                        string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Hệ thống xử lý âm thanh đang bận", senderId).ToString();
+                        await SendMessage(meanTextFromAudio, senderId);
+                        return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                    }
                 }
+                else
+                {
+                    // Kiểm tra nếu chuỗi không có chứa ký tự unicode sẽ chuyển qua tự thêm dấu
+                    if (text.Any(c => c > 255) == false)
+                    {
+                        string textAccentVN = GetPredictAccentVN(text, isActive);
+                        if (!String.IsNullOrEmpty(textAccentVN))
+                        {
+                            if (textAccentVN != text)
+                            {
+                                string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", senderId).ToString();
+                                await SendMessage(msg, senderId);
+                            }
+                            text = textAccentVN;
+                        }
+                    }
+                }
+                
+                
 
                 if (botId == BOT_Y_TE)
                 {
@@ -450,9 +565,21 @@ namespace BotProject.Web.API_Webhook
                 }
                 return await Task.FromResult<List<string>>(_lstBotReplyResponse);
             }
+
             AIMLbot.Result rsAIMLBot = GetBotReplyFromAIMLBot(text);
             ResultBot rsBOT = new ResultBot();
             rsBOT = CheckTypePostbackFromResultBotReply(rsAIMLBot);
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {
+                // Kiểm tra nếu chứa từ khóa về tìm kiếm văn bản luật thì gọi tìm văn bản                
+                if (CheckIfContainsLegal(text))
+                {
+                    HandleSearchAPI(botId, text, senderId);
+                    return await Task.FromResult<List<string>>(_lstBotReplyResponse);
+                }
+            }
+            
+
             if (rsBOT.Type == POSTBACK_MODULE)
             {
                 string templateModule = HandlePostbackModule(rsBOT.PatternPayload, text, botId, true);
@@ -487,67 +614,7 @@ namespace BotProject.Web.API_Webhook
             }
             if (rsBOT.Type == POSTBACK_NOT_MATCH)
             {
-                List<string> lstSymptoms = new List<string>();
-                if (botId == BOT_Y_TE)
-                {
-                    lstSymptoms = GetSymptoms(text);
-                    if (lstSymptoms.Count() != 0)
-                    {
-                        foreach (var symp in lstSymptoms)
-                        {
-                            await SendMessage(symp, senderId);
-                        }
-                    }
-                }
-                List<string> lstFaq = new List<string>();
-                lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
-                if (lstFaq.Count() != 0)
-                {
-                    foreach (var faq in lstFaq)
-                    {
-                        await SendMessage(faq, senderId);
-                    }
-                }
-
-                List<string> lstLegalDocs = new List<string>();
-                List<string> lstArticles = new List<string>();
-                if (botId.ToString() == "5041")
-                {
-                    lstLegalDocs = GetModuleApiSearchLegal(text,"keyword", "https://trogiupluat.vn","","get");
-                    if (lstLegalDocs.Count() != 0)
-                    {
-                        foreach (var legal in lstLegalDocs)
-                        {
-                            await SendMessage(legal, senderId);
-                        }
-                    }
-                    else
-                    {
-                        lstArticles = GetModuleApiSearchLegal(text, "keyword", "https://trogiupluat.vn", "", "get");
-                        if (lstArticles.Count() != 0)
-                        {
-                            foreach (var article in lstArticles)
-                            {
-                                await SendMessage(article, senderId);
-                            }
-                        }
-                    }
-                }
-
-                if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0 && lstLegalDocs.Count() == 0 && lstArticles.Count() == 0)
-                {
-                    List<string> keyList = new List<string>(_DICTIONARY_NOT_MATCH.Keys);
-                    Random rand = new Random();
-                    string randomKey = keyList[rand.Next(keyList.Count)];
-                    string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
-
-                    //string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
-                    //    contentNotFound, senderId, _contactAdmin, _titlePayloadContactAdmin).ToString();
-
-                    string templateNotFound = FacebookTemplate.GetMessageTemplateText(contentNotFound, senderId).ToString();
-
-                    await SendMessage(templateNotFound, senderId);
-                }
+                HandleSearchAPI(botId, text, senderId);
             }
             if (rsBOT.Type == POSTBACK_TEXT)
             {
@@ -692,6 +759,67 @@ namespace BotProject.Web.API_Webhook
             return templateHandle;
         }
         #endregion
+
+        private async void HandleSearchAPI(int botId, string text, string senderId)
+        {
+            List<string> lstSymptoms = new List<string>();
+            if (botId == BOT_Y_TE)
+            {
+                lstSymptoms = GetSymptoms(text);
+                if (lstSymptoms.Count() != 0)
+                {
+                    foreach (var symp in lstSymptoms)
+                    {
+                        await SendMessage(symp, senderId);
+                    }
+                }
+            }
+
+            List<string> lstLegalDocs = new List<string>();
+            List<string> lstArticles = new List<string>();
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {
+                if (CheckIfContainsLegal(text))
+                {
+                    lstLegalDocs = GetModuleApiSearchLegal(text, "keyword", "https://trogiupluat.vn", "", "get");
+                    if (lstLegalDocs.Count() != 0)
+                    {
+                        foreach (var legal in lstLegalDocs)
+                        {
+                            await SendMessage(legal, senderId);
+                        }
+                    }
+                    else
+                    {
+                        lstArticles = GetModuleApiSearchArticle(text, "keyword", "https://trogiupluat.vn", "", "get");
+                        if (lstArticles.Count() != 0)
+                        {
+                            foreach (var article in lstArticles)
+                            {
+                                await SendMessage(article, senderId);
+                            }
+                        }
+                    }
+                }                                
+            }
+
+            if (lstSymptoms.Count() == 0 && lstLegalDocs.Count() == 0 && lstArticles.Count() == 0) //&& lstFaq.Count() == 0
+            {
+                 SendMessageNotFound(senderId);
+            }
+        }
+
+        private async void SendMessageNotFound(string senderId)
+        {
+            List<string> keyList = new List<string>(_DICTIONARY_NOT_MATCH.Keys);
+            Random rand = new Random();
+            string randomKey = keyList[rand.Next(keyList.Count)];
+            string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
+
+            string templateNotFound = FacebookTemplate.GetMessageTemplateText(contentNotFound, senderId).ToString();
+
+            await SendMessage(templateNotFound, senderId);
+        }
 
         private ApplicationPlatformUser UpdateStatusAppUser(ApplicationPlatformUser appUserVm)
         {
@@ -1052,5 +1180,26 @@ namespace BotProject.Web.API_Webhook
 
 
         #endregion
+
+        private bool CheckIfContainsLegal(string text)
+        {
+            bool hasLegal = false;
+            // Kiểm tra nếu chứa từ khóa về tìm kiếm văn bản luật thì gọi tìm văn bản
+            string[] arrayDocument = new string[] {
+                        "Hiến pháp","Bộ luật","Luật","Pháp lệnh","Lệnh","Nghị quyết","Nghị quyết liên tịch","Nghị định",
+                        "Quyết định","Thông tư","Thông tư liên tịch","Chỉ thị","Công điện","Báo cáo","Biên bản","Công văn",
+                        "Điều lệ","Đính chính","Quy chế","Quy định","Quy trình","Quy chế phối hợp","Thông báo","Thông báo liên tịch",
+                        "Thông cáo", "Chỉ dẫn áp dụng văn bản luật","điều","văn bản"
+                    };
+            foreach (var docType in arrayDocument)
+            {
+                if (text.ToLower().Contains(docType.ToLower()))
+                {
+                    hasLegal = true;
+                    break;
+                }
+            }
+            return hasLegal;
+        }
     }
 }

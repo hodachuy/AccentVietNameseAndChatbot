@@ -194,7 +194,10 @@ namespace BotProject.Common.AppThird3PartyTemplate
                                          {
                                             type = "oa.open.url",
                                             title = titleQuickReply,
-                                            payload = url
+                                            payload = new
+                                            {
+                                                url= url
+                                            }
                                          }
                                      }
                                  }

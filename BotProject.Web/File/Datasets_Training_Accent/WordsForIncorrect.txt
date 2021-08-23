@@ -5,3 +5,10 @@ chào bán	chào bạn
 bị đầu tay	tay tôi bị đau
 tay tôi bị đầu	tay tôi bị đau
 xin cho hội	xin cho hỏi
+luật gia	luật giá
+thể văn bản	thẻ văn bản
+thể hình và chủ	thẻ hình và chữ
+thể nhiều hình và chủ	thẻ nhiều hình và chủ
+gp	giấy phép
+họạt	hoạt
+xb	xuất bản

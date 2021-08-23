@@ -1270,7 +1270,8 @@
 }
 
 ._6j2g {
-    border-top: 1px solid rgba(0, 0, 0, .10);
+    border-top: none;
+    /* border-top: 1px solid rgba(0, 0, 0, .10); */
     padding: 8px 12px;
     text-overflow: ellipsis;
 }

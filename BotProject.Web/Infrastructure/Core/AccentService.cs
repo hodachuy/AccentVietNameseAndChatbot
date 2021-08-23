@@ -38,6 +38,8 @@ namespace BotProject.Web
         public string GetAccentVN(string text)
         {
             string result = accent.predictAccents(text);
+            if (!String.IsNullOrEmpty(result))
+                result = Regex.Replace(result, @"\n", " ");
             return ReplaceWordNoCorrect(result);
         }
         public string GetMultiMatchesAccentVN(string text, int nResults)

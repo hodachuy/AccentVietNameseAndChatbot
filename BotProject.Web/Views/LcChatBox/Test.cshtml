@@ -22,6 +22,11 @@
     <link href="~/assets/livechat/css/chatbox-custom.css?v_cache=@File.GetLastWriteTime(Server.MapPath("/assets/livechat/css/chatbox-custom.css")).ToString("HHmmssfff")" rel="stylesheet" />
     <script src="~/Scripts/jquery-1.10.2.min.js"></script>
     <script src="~/assets/client/vendor/bootstrap/js/bootstrap.bundle.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
+
+    @*<script src="https://gersonrosales.github.io/Record-Audios-and-Videos-with-getUserMedia/Mp3LameEncoder.js"></script>*@
+    <script src="~/assets/livechat/js/Mp3LameEncoder.js"></script>
     <script>
         var _Host = '@System.Configuration.ConfigurationManager.AppSettings["Domain"]',
             _customerId,
@@ -51,6 +56,96 @@
             }
         })();
     </script>
+    <style>
+
+        ._6j2g {
+            border-top: none;
+        }
+
+        .footer-menu__btn--postback {
+            margin-bottom: 5px;
+        }
+
+        .form-input-audio {
+            display: flex;
+            align-items: center;
+        }
+
+        .box-loading-audio {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        /*loading audio*/
+        .loader {
+            height: 30px;
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+        }
+
+            .loader .stroke {
+                display: block;
+                position: relative;
+                background: #f1f1f1;
+                height: 90%;
+                width: 5px;
+                border-radius: 50px;
+                margin: 0 5px;
+                animation: animate 1.2s linear infinite;
+            }
+
+        @@keyframes animate {
+            50% {
+                height: 20%;
+            }
+
+            100% {
+                height: 100%;
+            }
+        }
+
+        .stroke:nth-child(1) {
+            animation-delay: 0s;
+        }
+
+        .stroke:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .stroke:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        .stroke:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+
+        .stroke:nth-child(5) {
+            animation-delay: 0.6s;
+        }
+
+        .stroke:nth-child(6) {
+            animation-delay: 0.3s;
+        }
+
+        .stroke:nth-child(7) {
+            animation-delay: 0s;
+        }
+
+        .stroke:nth-child(8) {
+            animation-delay: 0.3s;
+        }
+
+        .stroke:nth-child(9) {
+            animation-delay: 0.6s;
+        }
+
+        .stroke:nth-child(10) {
+            animation-delay: 0.9s;
+        }
+    </style>
 </head>
 <body style="background:transparent !important">
     <div dir="ltr" class="chatbox-main">
@@ -58,18 +153,31 @@
             <div class="header">
                 <div class="header-left">
                     <div class="ml-auto">
-                        @*<div class="dropdown">
-                                <a href="#" data-toggle="dropdown" style="color:#FFF">
-                                    <svg color="inherit" class="header-chat-options" viewBox="0 0 32 32" aria-hidden="true">
-                                        <path d="M8,18c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S9.1,18,8,18z M16,18c-1.1,0-2-0.9-2-2s0.9-2,2-2
+                        <div class="dropdown">
+                            <a href="#" data-toggle="dropdown" style="color:#FFF">
+                                <svg color="inherit" class="header-chat-options" viewBox="0 0 32 32" aria-hidden="true">
+                                    <path d="M8,18c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S9.1,18,8,18z M16,18c-1.1,0-2-0.9-2-2s0.9-2,2-2
                                         s2,0.9,2,2S17.1,18,16,18z M24,18c-1.1,0-2-0.9-2-2s0.9-2,2-2s2,0.9,2,2S25.1,18,24,18z"></path>
-                                    </svg>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-right" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 10px;min-width: 180px;border-radius: 8px;">
-                                    <a class="dropdown-item" href="#">Chuyển đổi không dấu Tiếng Việt</a>
-                                    <a class="dropdown-item" href="#">Tắt âm thanh</a>
-                                </div>
-                            </div>*@
+                                </svg>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right border-0" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 10px;min-width: 180px;border-radius: 8px;">
+                                <a class="dropdown-item px-1" href="javascript:void(0);"><input type="checkbox" id="group-audio" checked /><label style="margin-left:8px" for="group-audio">Tắt âm thanh</label></a>
+                                <ul class="list-unstyled p-1 mt-1" style="border-top:1px solid rgb(240, 240, 240)">
+                                    <li class="mb-1">
+                                        <input type="radio" name="radio-voice" id="group-voice-1" />
+                                        <label class="ml-1" for="group-voice-1">Giọng Miền Bắc</label>
+                                    </li>
+                                    <li class="mb-1">
+                                        <input type="radio" name="radio-voice" id="group-voice-2" />
+                                        <label class="ml-1" for="group-voice-2">Giọng Miền Trung</label>
+                                    </li>
+                                    <li class="mb-1">
+                                        <input type="radio" name="radio-voice" id="group-voice-3" />
+                                        <label class="ml-1" for="group-voice-3">Giọng Miền Nam</label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="header-body" id="header-title">
@@ -549,7 +657,7 @@
                 <div class="_336a">
                     <div class="_4zbw">
                         <!--BUTTON MENU-->
-                        <div class="_661n _661n_btn_menu_chat dropdown" tabindex="0" role="button" data-toggle="dropdown">
+                        <div class="_661n _661n_btn_menu_chat dropdown menu-footer" tabindex="0" role="button" data-toggle="dropdown">
                             <svg width="24px" height="24px" viewBox="0 0 24 24">
                                 <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" style="fill:rgb(75, 90, 148);">
                                     <g fill="#ea5269" style="fill:rgb(75, 90, 148);">
@@ -560,32 +668,60 @@
                                 </g>
                             </svg>
                         </div>
-                        <div class="dropdown-menu dropdown-menu-right" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 10px;min-width: 180px;border-radius: 8px;top:-21px !important;">
-                            <a class="dropdown-item footer-menu__btn--postback" data-postback="" href="javascript:void(0)">👉 Test</a>
-                            <a class="dropdown-item footer-menu__btn--postback" data-postback="" href="javascript:void(0)">👉 Test 2</a>
-                        </div>
+                        @if (botId == 5072)
+                        {
+                            <div class="dropdown-menu dropdown-menu-right" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 1px 10px;min-width: 180px;border-radius: 8px;top:-21px !important;">
+                                <a class="dropdown-item footer-menu__btn--postback" data-postback="postback_card_20109" href="javascript:void(0)">👉 Danh mục</a>
+                                <a class="dropdown-item footer-menu__btn--postback" data-postback="postback_card_20474" href="javascript:void(0)">📃 Tìm văn bản</a>
+                                <a class="dropdown-item footer-menu__btn--postback" data-postback="postback_card_20475" href="javascript:void(0)">🔍 Tìm điều luật</a>
+                            </div>
+                        }
 
                         <!--INPUT TEXT-->
-                        <div class="_4fwe">
+                        <div class="_4fwe form-input-text">
                             <label class="_58ak _3ct8">
                                 <input class="_58al _58al_input_txt" id="input-chat-message" type="text" autocomplete="off" placeholder="Nhập tin nhắn..." value="">
                             </label>
                         </div>
-                        @*<div class="_kmd">
-                                <div class="_4bqf _64mk _64ml btn_submit" id="btn-submit-chat-message" tabindex="0" role="button" style="display:none">
-                                    <svg width="22px" height="22px" viewBox="0 0 22 22">
-                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                                            <g transform="translate(-5.000000, -5.000000)" fill="#0081ff" style="fill:rgb(75, 90, 148);">
-                                                <g>
-                                                    <g transform="translate(5.000000, 5.000000)">
-                                                        <path d="M2.0300068,0.145970044 L20.9662955,9.37015518 C22.3445682,10.0420071 22.3445682,11.9582654 20.9662955,12.6296618 L2.0300068,21.853847 C1.09728834,22.3084288 0,21.6475087 0,20.6317597 L0.806953417,13.8945654 C0.882225434,13.2659853 1.39089595,12.7699536 2.03608467,12.6957083 L12.0229514,11.6795038 C12.8612292,11.5943266 12.8612292,10.4054904 12.0229514,10.3203132 L2.03608467,9.30410872 C1.39089595,9.23031889 0.882225434,8.7342872 0.806953417,8.10525162 L0,1.36805729 C0,0.352308292 1.09728834,-0.3081563 2.0300068,0.145970044"></path>
-                                                    </g>
+                        <div class="_4fwe form-input-audio d-none">
+                            <ion-icon class="btn_stop_audio" style="font-size: 26px; margin-left: 5px; cursor:pointer" id="btn-remove-audio" name="trash-outline"></ion-icon>
+                            <audio id="file-audio" controls type="audio/mpeg" class="d-none"></audio>
+                            <div class="box-loading-audio" style="background-color: #39F; border-radius: 10px; margin-left: 5px;">
+                                <div class="loader">
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                    <span class="stroke"></span>
+                                </div>
+                                <span class="text-white pr-1" id="audio-realtime">00:00</span>
+                            </div>
+                        </div>
+                        <div class="_kmd form-action-audio">
+                            <div class="_4bqf _64mk _64ml btn_submit" id="btn-on-micro" tabindex="0" role="button">
+                                <ion-icon style="font-size:27px" name="mic-outline"></ion-icon>
+                            </div>
+                        </div>
+                        <div class="_kmd">
+                            <div class="_4bqf _64mk _64ml btn_submit btn_stop_audio" id="btn-submit-chat-message" tabindex="0" role="button">
+                                <svg width="22px" height="22px" viewBox="0 0 22 22">
+                                    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                                        <g transform="translate(-5.000000, -5.000000)" fill="#0081ff" style="fill:#39F;">
+                                            <g>
+                                                <g transform="translate(5.000000, 5.000000)">
+                                                    <path d="M2.0300068,0.145970044 L20.9662955,9.37015518 C22.3445682,10.0420071 22.3445682,11.9582654 20.9662955,12.6296618 L2.0300068,21.853847 C1.09728834,22.3084288 0,21.6475087 0,20.6317597 L0.806953417,13.8945654 C0.882225434,13.2659853 1.39089595,12.7699536 2.03608467,12.6957083 L12.0229514,11.6795038 C12.8612292,11.5943266 12.8612292,10.4054904 12.0229514,10.3203132 L2.03608467,9.30410872 C1.39089595,9.23031889 0.882225434,8.7342872 0.806953417,8.10525162 L0,1.36805729 C0,0.352308292 1.09728834,-0.3081563 2.0300068,0.145970044"></path>
                                                 </g>
                                             </g>
                                         </g>
-                                    </svg>
-                                </div>
-                            </div>*@
+                                    </g>
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

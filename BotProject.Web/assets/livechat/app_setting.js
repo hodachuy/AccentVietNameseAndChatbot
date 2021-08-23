@@ -1,6 +1,6 @@
 ﻿//const getSrcOrigin = () => new URL(document.currentScript.src).origin;
-var appDomain = "https://bot.lawcoviet.vn/"
-//var appDomain = "http://localhost:54160/"
+//var appDomain = "https://bot.lawcoviet.vn/"
+var appDomain = "http://localhost:54160/"
 
 var lacviet = {
     setup: function (channelGroupId) {

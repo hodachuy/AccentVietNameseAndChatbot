@@ -241,7 +241,7 @@ namespace BotProject.Web.API_Mobile
                 {
                     string urlAudio = value.message.attachments[0].payload.url;
                     //BotLog.Info(urlAudio);
-                    var rsAudioToTextJson = await SpeechReconitionVNService.ConvertSpeechToText(urlAudio);
+                    var rsAudioToTextJson = await SpeechReconitionVNService.ConvertSpeechToTextAsync(urlAudio);
                     if (String.IsNullOrEmpty(rsAudioToTextJson))
                     {
                         return new HttpResponseMessage(HttpStatusCode.OK);

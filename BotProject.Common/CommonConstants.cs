@@ -58,6 +58,7 @@ namespace BotProject.Common
 
         public const string BOT_REQUEST_TEXT = "text";
         public const string BOT_REQUEST_PAYLOAD_POSTBACK = "payload_postback";
+        public const string BOT_REQUEST_AUDIO = "audio";
 
 
         #region Nhóm tài khoản livechat
@@ -98,6 +99,8 @@ namespace BotProject.Common
         /// HttpContext.Current.Server.MapPath("~/File/AIML/");
         /// </summary>
         public static string PathAIML = HttpContext.Current.Server.MapPath("~/File/AIML/");
+
+        public static string PathDocument = HttpContext.Current.Server.MapPath("~/File/Document/");
 
         /// <summary>
         /// HttpContext.Current.Server.MapPath("~/File/Datasets_Training_Accent/")

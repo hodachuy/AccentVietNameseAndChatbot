@@ -157,6 +157,7 @@ namespace BotProject.Web.API_Webhook
 
                 HttpResponseMessage response = null;
                 string text = message.text;
+
                 string senderId = message.senderId;
                 int botId = Int32.Parse(message.botId);
                 if (String.IsNullOrEmpty(text))
@@ -169,6 +170,9 @@ namespace BotProject.Web.API_Webhook
                     });
                     return response;
                 }
+
+                text = Regex.Replace(text, "<.*?>", String.Empty);
+
                 if (String.IsNullOrEmpty(message.botId))
                 {
                     response = request.CreateResponse(HttpStatusCode.OK, new
@@ -289,17 +293,22 @@ namespace BotProject.Web.API_Webhook
             {
                 // Thêm dấu tiếng việt
                 bool isActive = true;
-                string textAccentVN = GetPredictAccentVN(text, isActive);
-
-                if (!String.IsNullOrEmpty(textAccentVN))
+                // Kiểm tra nếu chuỗi không có chứa ký tự unicode sẽ chuyển qua tự thêm dấu
+                if (text.Any(c => c > 255) == false)
                 {
-                    if (textAccentVN != text)
+                    string textAccentVN = GetPredictAccentVN(text, isActive);
+
+                    if (!String.IsNullOrEmpty(textAccentVN))
                     {
-                        string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", senderId).ToString();
-                        await SendMessage(msg, senderId);
+                        if (textAccentVN != text)
+                        {
+                            string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", senderId).ToString();
+                            await SendMessage(msg, senderId);
+                        }
+                        text = textAccentVN;
                     }
-                    text = textAccentVN;
                 }
+                
 
                 if (botId == BOT_Y_TE)
                 {

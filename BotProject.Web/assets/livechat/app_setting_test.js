@@ -8,6 +8,7 @@ var lacviet = {
         lacviet.initFormChat(channelGroupId);
         //lacviet.tempPopupQnA();
         lacviet.modalContainer();
+
         //appDomain = decryptedUrl.slice(0, -1);
         //var modal = document.querySelector(".bot-modal");
         //var closeButton = document.querySelector(".bot-close-button");
@@ -136,12 +137,8 @@ $(document).on('click', '.fb_dialog', function (e) {
             frame.contentWindow.postMessage($(parent.window).width(), appDomain);
         }
         else {
-            //$('#dialog_iframe').css('width', '460px');
-            //$('#dialog_iframe').css('height', '652px');
             $('#dialog_iframe').css('width', '400px');
             $('#dialog_iframe').css('height', '580px');
-            //$('#dialog-form-bot').css('width', '382px');
-            //$('#dialog-form-bot').css('height', '652px');
         }
         setTimeout(function () {
             // bung chiều cao ô chatbox
@@ -168,7 +165,7 @@ var messageEvent = eventMethod == "attachEvent" ? "onmessage" : "message";
 eventer(messageEvent, function (e) {
     var key = e.message ? "message" : "data";
     var data = e[key];
-    //console.log(e.data)
+    console.log(e.data)
     //console.log(e.origin)
     //console.log(appDomain)
     if (e.data == 'close') {
@@ -181,3 +178,8 @@ eventer(messageEvent, function (e) {
         $('.fb_dialog').click();
     }
 }, false);
+
+// Nhận đường dẫn file export trả về
+function getFileExport(exportFile) {
+    console.log(exportFile)
+}

@@ -161,11 +161,10 @@ namespace BotProject.Web.API_Webhook
 
             var body = await Request.Content.ReadAsStringAsync();
             //LogError(body);
-            //BotLog.Info(body);
+            //BotLog.Info("ZALO" + body);
 
             if (body.Contains("user_send_text"))
             {
-
                 var value = JsonConvert.DeserializeObject<ZaloBotRequest>(body);
                 //LogError(body);      
 
@@ -219,9 +218,19 @@ namespace BotProject.Web.API_Webhook
                 var value = JsonConvert.DeserializeObject<ZaloBotRequest>(body);
                 if (value.message.attachments[0].type == "audio")
                 {
+                    var settingDb = _settingService.GetSettingByBotID(Int32.Parse(botId));
+                    pageToken = settingDb.ZaloPageToken;
+                    _patternCardPayloadProactive = "postback_card_" + settingDb.CardID.ToString();
+                    // Khởi động lấy "brain" của bot service theo id
+                    GetServerAIMLBot(botId);
+                    // Khởi tạo user theo bot service
+                    InitUserByServerAIMLBot(value.sender.id);
+                    // Lấy thuộc tính
+                    GetAttributeZalo(value.sender.id, botId);
+
                     string urlAudio = value.message.attachments[0].payload.url;
                     //BotLog.Info(urlAudio);
-                    var rsAudioToTextJson = await SpeechReconitionVNService.ConvertSpeechToText(urlAudio);
+                    var rsAudioToTextJson = await SpeechReconitionVNService.ConvertSpeechToTextAsync(urlAudio);
                     if (String.IsNullOrEmpty(rsAudioToTextJson))
                     {
                         return new HttpResponseMessage(HttpStatusCode.OK);
@@ -234,6 +243,8 @@ namespace BotProject.Web.API_Webhook
                         string text = stuff.hypotheses[0].utterance;
                         if (!String.IsNullOrEmpty(text))
                         {
+                            string meanTextFromAudio = ZaloTemplate.GetMessageTemplateText("Ý bạn là: " + text, value.sender.id).ToString();
+                            await SendMessage(meanTextFromAudio, value.sender.id);
                             text = Regex.Replace(text, @"\.", "");
                         }
                         await ExcuteMessage(text, value.sender.id, Int32.Parse(botId), value.timestamp, "audio");
@@ -241,7 +252,7 @@ namespace BotProject.Web.API_Webhook
                     }
                     else if (status == "1")
                     {
-                        string meanTextFromAudio = ZaloTemplate.GetMessageTemplateText("Không có âm thanh", value.sender.id).ToString();
+                        string meanTextFromAudio = ZaloTemplate.GetMessageTemplateText("Không nhận được tín hiệu âm thanh", value.sender.id).ToString();
                         await SendMessage(meanTextFromAudio, value.sender.id);
                         return new HttpResponseMessage(HttpStatusCode.OK);
                     }
@@ -310,7 +321,7 @@ namespace BotProject.Web.API_Webhook
             text = HttpUtility.HtmlDecode(text);
             text = Regex.Replace(text, @"<(.|\n)*?>", "").Trim(); // remove tag html
             text = Regex.Replace(text, @"\p{Cs}", "").Trim();// remove emoji
-
+            text = Regex.Replace(text, @"#", "").Trim(); // replace dấu # yêu cầu trong menu của Zalo
 
             // Lấy thông tin người dùng
             _zaloUser = GetUserById(sender, botId);
@@ -322,13 +333,20 @@ namespace BotProject.Web.API_Webhook
             {
                 // Thêm dấu tiếng việt
                 bool isActive = true;
-                string textAccentVN = GetPredictAccentVN(text, isActive);
-                if (textAccentVN != text.ToLower())
+                if (text.Any(c => c > 255) == false)
                 {
-                    string msg = ZaloTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
-                    await SendMessage(msg, sender);
-                }
-                text = textAccentVN;
+                    string textAccentVN = GetPredictAccentVN(text, isActive);
+                    if (textAccentVN != text.ToLower())
+                    {
+                        string msg = ZaloTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
+                        await SendMessage(msg, sender);
+                    }
+                    text = textAccentVN;
+                }                                
+            }
+
+            if(typeRequest == CommonConstants.BOT_REQUEST_TEXT || typeRequest == CommonConstants.BOT_REQUEST_AUDIO)
+            {
                 if (botId == BOT_Y_TE)
                 {
                     AttributeZaloUser attZaloUser = new AttributeZaloUser();
@@ -450,7 +468,7 @@ namespace BotProject.Web.API_Webhook
                 {
                     string postbackModule = _zaloUser.PredicateValue;
                     string templateModule = HandlePostbackModule(postbackModule, text, botId, false);
-                    await SendMessage(templateModule, sender);
+                    await SendMultiMessageTask(templateModule, sender);
                     return new HttpResponseMessage(HttpStatusCode.OK);
                 }
             }
@@ -472,6 +490,15 @@ namespace BotProject.Web.API_Webhook
             AIMLbot.Result rsAIMLBot = GetBotReplyFromAIMLBot(text);
             ResultBot rsBOT = new ResultBot();
             rsBOT = CheckTypePostbackFromResultBotReply(rsAIMLBot);
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {                
+                if (CheckIfContainsLegal(text))
+                {
+                    await HandleSearchAPI(botId, text, sender);
+                    return new HttpResponseMessage(HttpStatusCode.OK);
+                }
+            }
+                
             if (rsBOT.Type == POSTBACK_MODULE)
             {
                 string templateModule = HandlePostbackModule(rsBOT.PatternPayload, text, botId, true);
@@ -509,31 +536,7 @@ namespace BotProject.Web.API_Webhook
             {
                 if (_isSearchAI)
                 {
-                    List<string> lstSymptoms = new List<string>();
-                    if (botId == BOT_Y_TE)
-                    {
-                        lstSymptoms = GetSymptoms(text);
-                        if (lstSymptoms.Count() != 0)
-                        {
-                            foreach (var symp in lstSymptoms)
-                            {
-                                await SendMessage(symp, sender);
-                            }
-                        }
-                    }
-                    List<string> lstFaq = new List<string>();
-                    lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
-                    if (lstFaq.Count() != 0)
-                    {
-                        foreach (var faq in lstFaq)
-                        {
-                            await SendMessage(faq, sender);
-                        }
-                    }
-                    if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0)
-                    {
-                        await SendMessageNotFound(sender);
-                    }
+                    await HandleSearchAPI(botId, text, sender);
                 }
                 else
                 {
@@ -617,9 +620,12 @@ namespace BotProject.Web.API_Webhook
             _zaloUser.IsHaveSetAttributeSystem = false;
             _zaloUser.AttributeName = "";
             var cardDb = _cardService.GetCardByPattern(patternCard);
-            string tempCardFb = cardDb.TemplateJsonZalo;
-
-            if (cardDb.TemplateJsonZalo.Contains("module"))
+            string tempCardZl = cardDb.TemplateJsonZalo;
+            if (String.IsNullOrEmpty(tempCardZl))
+            {
+                tempCardZl = cardDb.TemplateJsonFacebook;
+            }
+            if (tempCardZl.Contains("module"))
             {
                 var rsAIMLBot = GetBotReplyFromAIMLBot(patternCard);
                 string patternModule = rsAIMLBot.OutputSentences[0].ToString().Replace(".", "").Trim();
@@ -650,7 +656,7 @@ namespace BotProject.Web.API_Webhook
                 _zaloUser.PredicateName = "VERIFY_TEXT_WITH_AREA_BUTTON";
             }
             UpdateStatusZaloUser(_zaloUser);
-            return tempCardFb;
+            return tempCardZl;
         }
         private string HandlePostbackModule(string postbackModule, string text, int botId, bool isFristRequest)
         {
@@ -691,9 +697,88 @@ namespace BotProject.Web.API_Webhook
             Random rand = new Random();
             string randomKey = keyList[rand.Next(keyList.Count)];
             string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
-            string templateNotFound = ZaloTemplate.GetMessageTemplateTextAndQuickReply(
-                contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
+            //string templateNotFound = ZaloTemplate.GetMessageTemplateTextAndQuickReply(
+            //    contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
+
+            string templateNotFound = ZaloTemplate.GetMessageTemplateText(
+                contentNotFound, sender).ToString();
+
             await SendMessage(templateNotFound, sender);
+        }
+
+        private async Task HandleSearchAPI(int botId, string text, string sender)
+        {
+            HistoryViewModel hisVm = new HistoryViewModel();
+            hisVm.BotID = botId;
+            hisVm.BotHandle = MessageBot.BOT_HISTORY_HANDLE_002;
+            hisVm.CreatedDate = DateTime.Now;
+            hisVm.UserSay = text;
+            hisVm.UserName = sender;
+            hisVm.Type = CommonConstants.TYPE_ZALO;
+            AddHistory(hisVm);
+
+            List<string> lstSymptoms = new List<string>();
+            if (botId == BOT_Y_TE)
+            {
+                lstSymptoms = GetSymptoms(text);
+                if (lstSymptoms.Count() != 0)
+                {
+                    foreach (var symp in lstSymptoms)
+                    {
+                        await SendMessage(symp, sender);
+                    }
+                }
+            }
+            //List<string> lstFaq = new List<string>();
+            //lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
+            //if (lstFaq.Count() != 0)
+            //{
+            //    foreach (var faq in lstFaq)
+            //    {
+            //        await SendMessage(faq, sender);
+            //    }
+            //}
+
+            List<string> lstLegalDocs = new List<string>();
+            List<string> lstArticles = new List<string>();
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {
+                if (CheckIfContainsLegal(text))
+                {
+                    lstLegalDocs = GetModuleApiSearchLegal(text, "keyword", "https://trogiupluat.vn", "", "get");
+                    if (lstLegalDocs.Count() != 0)
+                    {
+                        foreach (var legal in lstLegalDocs)
+                        {
+                            await SendMessage(legal, sender);
+                        }
+                    }
+                    else
+                    {
+                        lstArticles = GetModuleApiSearchArticle(text, "keyword", "https://trogiupluat.vn", "", "get");
+                        if (lstArticles.Count() != 0)
+                        {
+                            foreach (var article in lstArticles)
+                            {
+                                await SendMessage(article, sender);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (lstSymptoms.Count() == 0 && lstLegalDocs.Count() == 0 && lstArticles.Count() == 0)
+            {
+                hisVm.BotID = botId;
+                hisVm.BotHandle = MessageBot.BOT_HISTORY_HANDLE_008;
+                hisVm.CreatedDate = DateTime.Now;
+                hisVm.UserSay = text;
+                hisVm.UserName = sender;
+                hisVm.Type = CommonConstants.TYPE_ZALO;
+                AddHistory(hisVm);
+
+                await SendMessageNotFound(sender);
+            }
         }
         
         /// <summary>
@@ -706,15 +791,19 @@ namespace BotProject.Web.API_Webhook
             if (!String.IsNullOrEmpty(templateJson))
             {
                 // Lấy token file từ zalo
-                if(templateJson.Contains("\"type\": \"file\""))
+                if(templateJson.Contains("\"file\"")) // kiểm tra "type":"file"
                 {
-                    var objFile = new JavaScriptSerializer
+                    string fileUrl = "";
+                    Regex rFileUrl = new Regex("url\":\"(.+?)}", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+                    Match macthFileUrl = rFileUrl.Match(templateJson);
+                    if (macthFileUrl.Success)
                     {
-                        MaxJsonLength = Int32.MaxValue,
-                        RecursionLimit = 100
-                    }.Deserialize<dynamic>(templateJson);
-
-                    string fileToken = GetFileToken(objFile.message.attachment.payload);
+                        fileUrl = macthFileUrl.Groups[1].Value.Replace("\"","");
+                    }
+                    string rootFile = System.Configuration.ConfigurationManager.AppSettings["RootPath"];
+                    //string fileToken = GetFileToken(rootFile + fileUrl);
+                    var taskGetTokenFile = Task.Run(() => GetFileToken(rootFile + fileUrl));
+                    var fileToken = taskGetTokenFile.Result;
 
                     templateJson = ZaloTemplate.GetMessageTemplateFile(fileToken, sender).ToString();
                 }
@@ -832,29 +921,50 @@ namespace BotProject.Web.API_Webhook
             return user;
         }
 
-        private string GetFileToken(string fileUrl)
+        private async Task<string> GetFileToken(string fileUrl)
         {
-            string fileToken = "";
-            var multiForm = new MultipartFormDataContent();
-
-            // add file and directly upload it
-            FileStream fs = File.OpenRead(fileUrl);
-            multiForm.Add(new StreamContent(fs), "file", Domain + Path.GetFileName(fileUrl));
-
-            // send request to API
-            var url = "https://openapi.zalo.me/v2.0/oa/upload/file?access_token=" + pageToken;
-            var response = _client.PostAsync(url, multiForm).Result;
-            if (response.IsSuccessStatusCode)
+            FileInfo fi = new FileInfo(fileUrl);
+            string zaloAPIFile = "https://openapi.zalo.me/v2.0/oa/upload/file?access_token=" + pageToken;
+            using (var form = new MultipartFormDataContent())
             {
-                var result = new JavaScriptSerializer
+                using (var fs = File.OpenRead(fileUrl))
                 {
-                    MaxJsonLength = Int32.MaxValue,
-                    RecursionLimit = 100
+                    using (var streamContent = new StreamContent(fs))
+                    {
+                        using (var fileContent = new ByteArrayContent(await streamContent.ReadAsByteArrayAsync()))
+                        {
+                            fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
+                            if (fi.Extension == ".docx")
+                            {
+                                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+                            }
+                            else if (fi.Extension == ".doc")
+                            {
+                                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/msword");
+                            }
+                            else if (fi.Extension == ".pdf")
+                            {
+                                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+                            }
+                            
+                            form.Add(fileContent, "file", System.IO.Path.GetFileName(fileUrl));
+                            HttpResponseMessage response = await _client.PostAsync(zaloAPIFile, form);
+                            if (response.IsSuccessStatusCode)
+                            {
+                                var result = new JavaScriptSerializer
+                                {
+                                    MaxJsonLength = Int32.MaxValue,
+                                    RecursionLimit = 100
+                                }
+                                .Deserialize<dynamic>(response.Content.ReadAsStringAsync().Result);
+                                return result["data"]["token"].ToString();
+                            }
+                        }
+                    }
                 }
-                .Deserialize<dynamic>(response.Content.ReadAsStringAsync().Result);
-                fileToken = result.data.token;
             }
-            return fileToken;
+
+            return "";       
         }
 
         private void AddAttributeDefault(string userId, int BotId, string key, string value)
@@ -950,6 +1060,106 @@ namespace BotProject.Web.API_Webhook
             }
             return _lstSymptoms;
         }
+
+        private string apiSearchLegal = "/api/legal/SearchLegalDoc";
+        private string apiSearchArticle = "/api/article/search-relate";
+        private string urlAPISearchLegal = "https://trogiupluat.vn";
+
+        private List<string> GetModuleApiSearchLegal(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstLegalDocs = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result = ExcuteModuleSearchAPI(apiSearchLegal, param, urlAPISearchLegal, keyAPI, methodeHttp);
+            if (!String.IsNullOrEmpty(result))
+            {
+                var dataListLegal = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<List<LegalApiModel>>(result);
+                if (dataListLegal.Count() != 0)
+                {
+                    string resultTotal = "Tìm thấy 4 kết quả liên quan văn bản luật";
+                    lstLegalDocs.Add(ZaloTemplate.GetMessageTemplateText(resultTotal, "{{senderId}}").ToString());
+                    lstLegalDocs.Add(ZaloTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal.Take(4).ToList()).ToString());
+                }
+            }
+            return lstLegalDocs;
+        }
+
+        private List<string> GetModuleApiSearchArticle(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstArticles = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result = ExcuteModuleSearchAPI(apiSearchArticle, param, urlAPISearchLegal, keyAPI, methodeHttp);
+
+            if (!String.IsNullOrEmpty(result))
+            {
+                var resultArticles = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<Dictionary<string, string>>(result);
+
+                string totalArticle = resultArticles["total"];
+                if (totalArticle != "0")
+                {
+                    string resultTotal = "Tìm thấy " + totalArticle + " kết quả liên quan điều luật";
+                    string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + contentText;
+                    lstArticles.Add(ZaloTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết").ToString());
+                }
+            }
+            return lstArticles;
+        }
+        private string ExcuteModuleSearchAPI(string NameFuncAPI, string param, string UrlAPI, string KeySecrectAPI, string Type = "Post")
+        {
+            string result = null;
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(UrlAPI);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                if (!String.IsNullOrEmpty(KeySecrectAPI))
+                {
+                    string[] key = KeySecrectAPI.Split(':');
+                    client.DefaultRequestHeaders.Add(key[0], key[1]);
+                }
+                HttpResponseMessage response = new HttpResponseMessage();
+                param = Uri.UnescapeDataString(param);
+                var dict = HttpUtility.ParseQueryString(param);
+                string json = JsonConvert.SerializeObject(dict.Cast<string>().ToDictionary(k => k, v => dict[v]));
+
+                StringContent httpContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+                try
+                {
+                    if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_POST))
+                    {
+                        response = client.PostAsync(NameFuncAPI, httpContent).Result;
+                    }
+                    else if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_GET))
+                    {
+                        string requestUri = NameFuncAPI + "?" + param;
+                        response = client.GetAsync(requestUri).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return String.Empty;
+                }
+                if (response.IsSuccessStatusCode)
+                {
+                    result = response.Content.ReadAsStringAsync().Result;
+                }
+                else
+                {
+                    result = String.Empty;
+                }
+            }
+            return result;
+        }
+
         #endregion
 
         #region Convert AccentVN - Thêm dấu Tiếng việt
@@ -964,6 +1174,28 @@ namespace BotProject.Web.API_Webhook
             return textVN;
         }
         #endregion
+
+
+        private bool CheckIfContainsLegal(string text)
+        {
+            bool hasLegal = false;
+            // Kiểm tra nếu chứa từ khóa về tìm kiếm văn bản luật thì gọi tìm văn bản
+            string[] arrayDocument = new string[] {
+                        "Hiến pháp","Bộ luật","Luật","Pháp lệnh","Lệnh","Nghị quyết","Nghị quyết liên tịch","Nghị định",
+                        "Quyết định","Thông tư","Thông tư liên tịch","Chỉ thị","Công điện","Báo cáo","Biên bản","Công văn",
+                        "Điều lệ","Đính chính","Quy chế","Quy định","Quy trình","Quy chế phối hợp","Thông báo","Thông báo liên tịch",
+                        "Thông cáo", "Chỉ dẫn áp dụng văn bản luật","điều","văn bản"
+                    };
+            foreach (var docType in arrayDocument)
+            {
+                if (text.ToLower().Contains(docType.ToLower()))
+                {
+                    hasLegal = true;
+                    break;
+                }
+            }
+            return hasLegal;
+        }
 
         public class ResultBot
         {

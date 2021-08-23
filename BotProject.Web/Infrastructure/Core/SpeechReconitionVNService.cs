@@ -15,34 +15,67 @@ namespace BotProject.Web.Infrastructure.Core
 {
     public class SpeechReconitionVNService
     {
-        private readonly static string _keySpeechRec = Helper.ReadString("KeySpeechReconition");
+        public static string ConvertSpeechToText(string fileAudio, bool isLocal = false)
+        {
+            string result = "";
+            using (HttpClient client = new HttpClient())
+            {
+                string _keySpeechRec = Helper.ReadString("KeySpeechReconition");
+                client.DefaultRequestHeaders.Add("api-key", _keySpeechRec);
+                WebClient web = new WebClient();
+                byte[] byteArray = new byte[] { };
+                if (isLocal == false)
+                {
+                    byteArray = web.DownloadData(fileAudio);
+                }
+                else
+                {
+                    byteArray = File.ReadAllBytes(fileAudio);
+                }
+                ByteArrayContent bytesContent = new ByteArrayContent(byteArray);
+                var response = client.PostAsync("https://api.fpt.ai/hmi/asr/general", bytesContent).Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    result = response.Content.ReadAsStringAsync().Result;
+                    return HttpUtility.HtmlDecode(result);
 
-        public static async Task<string> ConvertSpeechToText(string fileAudio)
+                }
+            }
+            return result;
+        }
+        public static async Task<string> ConvertSpeechToTextAsync(string fileAudio, bool isLocal = false)
         {
             ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
-
-            string result = null;
+            string _keySpeechRec = Helper.ReadString("KeySpeechReconition");
+            string result = "";
             try
             {
                 using (HttpClient client = new HttpClient())
                 {
-                    client.BaseAddress = new Uri("https://api.openfpt.vn/");
-                    client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                    client.DefaultRequestHeaders.Add("api_key", _keySpeechRec);
-                    client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Taco2) Gecko/20100101");
-
+                    //client.BaseAddress = new Uri("https://api.fpt.ai/hmi/asr/general");
+                    //client.DefaultRequestHeaders.Accept.Clear();
+                    //client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    client.DefaultRequestHeaders.Add("api-key", _keySpeechRec);
+                    //client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Taco2) Gecko/20100101");
                     WebClient web = new WebClient();
-                    byte[] byteArray = web.DownloadData(fileAudio);
-                    //byte[] byteArray = File.ReadAllBytes(fileAudio);
+                    byte[] byteArray = new byte[]{ };
+                    if (isLocal == false)
+                    {
+                        byteArray = web.DownloadData(fileAudio);
+                    }
+                    else
+                    {
+                        byteArray = File.ReadAllBytes(fileAudio);
+                    }
+                    
                     ByteArrayContent bytesContent = new ByteArrayContent(byteArray);
-                    var response = await client.PostAsync("fsr", bytesContent);
+                    var response = await client.PostAsync("https://api.fpt.ai/hmi/asr/general", bytesContent);
                     if (response.IsSuccessStatusCode)
                     {
                         result = response.Content.ReadAsStringAsync().Result;
-                        //BotLog.Error("ConvertSpeechToText Result: " + result);
-                        result = HttpUtility.HtmlDecode(result);                       
+                        //BotLog.Info("ConvertSpeechToText Result: " + result);
+                        return HttpUtility.HtmlDecode(result);                       
                     }
                 }
             }

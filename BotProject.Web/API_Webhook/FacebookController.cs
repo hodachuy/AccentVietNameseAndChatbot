@@ -184,6 +184,7 @@ namespace BotProject.Web.API_Webhook
             var signature = Request.Headers.GetValues("X-Hub-Signature").FirstOrDefault().Replace("sha1=", "");
 
             var body = await Request.Content.ReadAsStringAsync();
+            //BotLog.Info("FACEBOOK" + body);
             FacebookBotRequest objMsgUser = JsonConvert.DeserializeObject<FacebookBotRequest>(body);
             if (objMsgUser.@object != "page")
             {
@@ -229,6 +230,49 @@ namespace BotProject.Web.API_Webhook
                     {
                         await ExcuteMessage(item.message.quick_reply.payload, item.sender.id, botId, item.timestamp, "payload_postback");
                         return new HttpResponseMessage(HttpStatusCode.OK);
+                    }
+                    else if (item.message.attachments != null && item.message.attachments[0].type == "audio")
+                    {
+                        string urlAudio = item.message.attachments[0].payload.url;
+                        var rsAudioToTextJson = await SpeechReconitionVNService.ConvertSpeechToTextAsync(urlAudio);
+                        if (String.IsNullOrEmpty(rsAudioToTextJson))
+                        {
+                            return new HttpResponseMessage(HttpStatusCode.OK);
+                        }
+
+                        dynamic stuff = JsonConvert.DeserializeObject(rsAudioToTextJson);
+
+                        string status = stuff.status;
+                        if (status == "0")
+                        {
+                            string text = stuff.hypotheses[0].utterance;
+                            if (!String.IsNullOrEmpty(text))
+                            {
+                                string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + text, item.sender.id).ToString();
+                                await SendMessage(meanTextFromAudio, item.sender.id);
+                                text = Regex.Replace(text, @"\.", "");
+                                await ExcuteMessage(text, item.sender.id, botId, item.timestamp, "audito");                               
+                            }
+                            return new HttpResponseMessage(HttpStatusCode.OK);
+                        }
+                        else if (status == "1")
+                        {
+                            string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Không nhận được tín hiệu âm thanh", item.sender.id).ToString();
+                            await SendMessage(meanTextFromAudio, item.sender.id);
+                            return new HttpResponseMessage(HttpStatusCode.OK);
+                        }
+                        else if (status == "2")
+                        {
+                            string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Xử lý âm thanh bị hủy", item.sender.id).ToString();
+                            await SendMessage(meanTextFromAudio, item.sender.id);
+                            return new HttpResponseMessage(HttpStatusCode.OK);
+                        }
+                        else if (status == "9")
+                        {
+                            string meanTextFromAudio = FacebookTemplate.GetMessageTemplateText("Hệ thống xử lý âm thanh đang bận", item.sender.id).ToString();
+                            await SendMessage(meanTextFromAudio, item.sender.id);
+                            return new HttpResponseMessage(HttpStatusCode.OK);
+                        }
                     }
                     else
                     {
@@ -291,25 +335,31 @@ namespace BotProject.Web.API_Webhook
             // Lấy thông tin người dùng
             _fbUser = GetUserById(sender, botId);
 
-            //HistoryViewModel hisVm = new HistoryViewModel();
-
+            
             // Input text
             if (typeRequest == CommonConstants.BOT_REQUEST_TEXT)
             {
                 // Thêm dấu tiếng việt
                 bool isActive = true;
-                string textAccentVN = GetPredictAccentVN(text, isActive);
-
-                if (!String.IsNullOrEmpty(textAccentVN))
+                // Kiểm tra nếu chuỗi không có chứa ký tự unicode sẽ chuyển qua tự thêm dấu
+                if (text.Any(c => c > 255) == false)
                 {
-                    if (textAccentVN != text.ToLower())
-                    {
-                        string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
-                        await SendMessage(msg, sender);
-                    }
-                    text = textAccentVN;
-                }
+                    string textAccentVN = GetPredictAccentVN(text, isActive);
 
+                    if (!String.IsNullOrEmpty(textAccentVN))
+                    {
+                        if (textAccentVN != text.ToLower())
+                        {
+                            string msg = FacebookTemplate.GetMessageTemplateText("Ý bạn là: " + textAccentVN + "", sender).ToString();
+                            await SendMessage(msg, sender);
+                        }
+                        text = textAccentVN;
+                    }
+                }                                  
+            }
+
+            if (typeRequest == CommonConstants.BOT_REQUEST_TEXT || typeRequest == CommonConstants.BOT_REQUEST_AUDIO)
+            {
                 if (botId == BOT_Y_TE)
                 {
                     AttributeFacebookUser attFbUser = new AttributeFacebookUser();
@@ -322,6 +372,7 @@ namespace BotProject.Web.API_Webhook
                     _attributeService.CreateUpdateAttributeFacebook(attFbUser);
                 }
             }
+            
 
             // Input postback            
             if (typeRequest == CommonConstants.BOT_REQUEST_PAYLOAD_POSTBACK)
@@ -379,16 +430,6 @@ namespace BotProject.Web.API_Webhook
                     _dicAttributeUser.Add(attFbUser.AttributeKey, attFbUser.AttributeValue);
                     _attributeService.CreateUpdateAttributeFacebook(attFbUser);
                 }
-
-
-                //hisVm.BotID = botId;
-                //hisVm.CreatedDate = DateTime.Now;
-                //hisVm.UserSay = text;
-                //hisVm.UserName = sender;
-                //hisVm.Type = CommonConstants.TYPE_FACEBOOK;
-                //hisVm.BotHandle = MessageBot.BOT_HISTORY_HANDLE_004;
-                //AddHistory(hisVm);
-
             }
             if (_fbUser.PredicateName == "REQUIRE_CLICK_BUTTON_TO_NEXT_CARD")
             {
@@ -431,7 +472,7 @@ namespace BotProject.Web.API_Webhook
                 {
                     string postbackModule = _fbUser.PredicateValue;
                     string templateModule = HandlePostbackModule(postbackModule, text, botId, false);
-                    await SendMessage(templateModule, sender);
+                    await SendMultiMessageTask(templateModule, sender);
                     return new HttpResponseMessage(HttpStatusCode.OK);
                 }
             }
@@ -453,6 +494,16 @@ namespace BotProject.Web.API_Webhook
             AIMLbot.Result rsAIMLBot = GetBotReplyFromAIMLBot(text);
             ResultBot rsBOT = new ResultBot();
             rsBOT = CheckTypePostbackFromResultBotReply(rsAIMLBot);
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {
+                // Kiểm tra nếu chứa từ khóa về tìm kiếm văn bản luật thì gọi tìm văn bản               
+                if (CheckIfContainsLegal(text))
+                {
+                    await HandleSearchAPI(botId, text, sender);
+                    return new HttpResponseMessage(HttpStatusCode.OK);
+                }
+            }
+             
             if (rsBOT.Type == POSTBACK_MODULE)
             {
                 string templateModule = HandlePostbackModule(rsBOT.PatternPayload, text, botId, true);
@@ -486,48 +537,21 @@ namespace BotProject.Web.API_Webhook
 
                 }
             }
-            if (rsBOT.Type == POSTBACK_NOT_MATCH)
-            {
-                if (_isSearchAI)
-                {
-                    List<string> lstSymptoms = new List<string>();
-                    if (botId == BOT_Y_TE)
-                    {
-                        lstSymptoms = GetSymptoms(text);
-                        if (lstSymptoms.Count() != 0)
-                        {
-                            foreach (var symp in lstSymptoms)
-                            {
-                                await SendMessage(symp, sender);
-                            }
-                        }
-                    }
-
-                    List<string> lstFaq = new List<string>();
-                    lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
-                    if (lstFaq.Count() != 0)
-                    {
-                        foreach (var faq in lstFaq)
-                        {
-                            await SendMessage(faq, sender);
-                        }
-                    }
-
-                    if (lstSymptoms.Count() == 0 && lstFaq.Count() == 0)
-                    {
-                        await SendMessageNotFound(sender);
-                    }
-                }
-                else
-                {
-                    await SendMessageNotFound(sender);
-                }
-                              
-            }
             if (rsBOT.Type == POSTBACK_TEXT)
             {
                 string templateText = FacebookTemplate.GetMessageTemplateText(rsBOT.PatternPayload, sender).ToString();
                 await SendMessage(templateText, sender);
+            }
+            if (rsBOT.Type == POSTBACK_NOT_MATCH)
+            {
+                if (_isSearchAI)
+                {
+                    await HandleSearchAPI(botId, text, sender);
+                }
+                else
+                {
+                    await SendMessageNotFound(sender);
+                }                              
             }
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -732,6 +756,79 @@ namespace BotProject.Web.API_Webhook
         #endregion
 
         #region Send API Message Facebook
+        private async Task HandleSearchAPI(int botId, string text, string sender)
+        {
+            HistoryViewModel hisVm = new HistoryViewModel();
+            hisVm.BotID = botId;
+            hisVm.BotHandle = MessageBot.BOT_HISTORY_HANDLE_002;
+            hisVm.CreatedDate = DateTime.Now;
+            hisVm.UserSay = text;
+            hisVm.UserName = sender;
+            hisVm.Type = CommonConstants.TYPE_FACEBOOK;
+            AddHistory(hisVm);
+
+            List<string> lstSymptoms = new List<string>();
+            if (botId == BOT_Y_TE)
+            {
+                lstSymptoms = GetSymptoms(text);
+                if (lstSymptoms.Count() != 0)
+                {
+                    foreach (var symp in lstSymptoms)
+                    {
+                        await SendMessage(symp, sender);
+                    }
+                }
+            }
+            //List<string> lstFaq = new List<string>();
+            //lstFaq = GetRelatedQuestion(text, "0", "5", botId.ToString());
+            //if (lstFaq.Count() != 0)
+            //{
+            //    foreach (var faq in lstFaq)
+            //    {
+            //        await SendMessage(faq, sender);
+            //    }
+            //}
+
+            List<string> lstLegalDocs = new List<string>();
+            List<string> lstArticles = new List<string>();
+            if (botId.ToString() == "5041" || botId.ToString() == "5072")
+            {
+                if (CheckIfContainsLegal(text))
+                {
+                    lstLegalDocs = GetModuleApiSearchLegal(text, "keyword", "https://trogiupluat.vn", "", "get");
+                    if (lstLegalDocs.Count() != 0)
+                    {
+                        foreach (var legal in lstLegalDocs)
+                        {
+                            await SendMessage(legal, sender);
+                        }
+                    }
+                    else
+                    {
+                        lstArticles = GetModuleApiSearchArticle(text, "keyword", "https://trogiupluat.vn", "", "get");
+                        if (lstArticles.Count() != 0)
+                        {
+                            foreach (var article in lstArticles)
+                            {
+                                await SendMessage(article, sender);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (lstSymptoms.Count() == 0 && lstLegalDocs.Count() == 0 && lstArticles.Count() == 0)
+            {
+                hisVm.BotID = botId;
+                hisVm.BotHandle = MessageBot.BOT_HISTORY_HANDLE_008;
+                hisVm.CreatedDate = DateTime.Now;
+                hisVm.UserSay = text;
+                hisVm.UserName = sender;
+                hisVm.Type = CommonConstants.TYPE_FACEBOOK;
+                AddHistory(hisVm);
+                await SendMessageNotFound(sender);
+            }
+        }
 
         private async Task SendMessageNotFound(string sender)
         {
@@ -739,8 +836,13 @@ namespace BotProject.Web.API_Webhook
             Random rand = new Random();
             string randomKey = keyList[rand.Next(keyList.Count)];
             string contentNotFound = _DICTIONARY_NOT_MATCH[randomKey];
-            string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
-                contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
+
+            //string templateNotFound = FacebookTemplate.GetMessageTemplateTextAndQuickReply(
+            //    contentNotFound, sender, _contactAdmin, _titlePayloadContactAdmin).ToString();
+
+            string templateNotFound = FacebookTemplate.GetMessageTemplateText(
+                contentNotFound, sender).ToString();
+
             await SendMessage(templateNotFound, sender);
         }
 
@@ -840,6 +942,106 @@ namespace BotProject.Web.API_Webhook
             }
             return _lstSymptoms;
         }
+
+        private string apiSearchLegal = "/api/legal/SearchLegalDoc";
+        private string apiSearchArticle = "/api/article/search-relate";
+        private string urlAPISearchLegal = "https://trogiupluat.vn";
+
+        private List<string> GetModuleApiSearchLegal(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstLegalDocs = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result = ExcuteModuleSearchAPI(apiSearchLegal, param, urlAPISearchLegal, keyAPI, methodeHttp);
+            if (!String.IsNullOrEmpty(result))
+            {
+                var dataListLegal = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<List<LegalApiModel>>(result);
+                if (dataListLegal.Count() != 0)
+                {
+                    string resultTotal = "Tìm thấy " + dataListLegal.Count() + " kết quả liên quan văn bản luật";
+                    lstLegalDocs.Add(FacebookTemplate.GetMessageTemplateText(resultTotal, "{{senderId}}").ToString());
+                    lstLegalDocs.Add(FacebookTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal.Take(4).ToList(), "").ToString());
+                }
+            }
+            return lstLegalDocs;
+        }
+
+        private List<string> GetModuleApiSearchArticle(string contentText, string param, string urlAPI, string keyAPI, string methodeHttp)
+        {
+            List<string> lstArticles = new List<string>();
+
+            param = "keyword=" + contentText;
+            string result = ExcuteModuleSearchAPI(apiSearchArticle, param, urlAPISearchLegal, keyAPI, methodeHttp);
+
+            if (!String.IsNullOrEmpty(result))
+            {
+                var resultArticles = new JavaScriptSerializer
+                {
+                    MaxJsonLength = Int32.MaxValue,
+                    RecursionLimit = 100
+                }.Deserialize<Dictionary<string, string>>(result);
+
+                string totalArticle = resultArticles["total"];
+                if (totalArticle != "0")
+                {
+                    string resultTotal = "Tìm thấy " + totalArticle + " kết quả liên quan điều luật";
+                    string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + contentText;
+                    lstArticles.Add(FacebookTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết").ToString());
+                }
+            }
+            return lstArticles;
+        }
+        private string ExcuteModuleSearchAPI(string NameFuncAPI, string param, string UrlAPI, string KeySecrectAPI, string Type = "Post")
+        {
+            string result = null;
+            using (HttpClient client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(UrlAPI);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                if (!String.IsNullOrEmpty(KeySecrectAPI))
+                {
+                    string[] key = KeySecrectAPI.Split(':');
+                    client.DefaultRequestHeaders.Add(key[0], key[1]);
+                }
+                HttpResponseMessage response = new HttpResponseMessage();
+                param = Uri.UnescapeDataString(param);
+                var dict = HttpUtility.ParseQueryString(param);
+                string json = JsonConvert.SerializeObject(dict.Cast<string>().ToDictionary(k => k, v => dict[v]));
+
+                StringContent httpContent = new StringContent(json, UnicodeEncoding.UTF8, "application/json");
+                try
+                {
+                    if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_POST))
+                    {
+                        response = client.PostAsync(NameFuncAPI, httpContent).Result;
+                    }
+                    else if (Type.ToUpper().Equals(Common.CommonConstants.MethodeHTTP_GET))
+                    {
+                        string requestUri = NameFuncAPI + "?" + param;
+                        response = client.GetAsync(requestUri).Result;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    return String.Empty;
+                }
+                if (response.IsSuccessStatusCode)
+                {
+                    result = response.Content.ReadAsStringAsync().Result;
+                }
+                else
+                {
+                    result = String.Empty;
+                }
+            }
+            return result;
+        }
+
         #endregion
 
         #region VerifySignatureFacebook
@@ -876,6 +1078,27 @@ namespace BotProject.Web.API_Webhook
             return textVN;
         }
         #endregion
+
+        private bool CheckIfContainsLegal(string text)
+        {
+            bool hasLegal = false;
+            // Kiểm tra nếu chứa từ khóa về tìm kiếm văn bản luật thì gọi tìm văn bản
+            string[] arrayDocument = new string[] {
+                        "Hiến pháp","Bộ luật","Luật","Pháp lệnh","Lệnh","Nghị quyết","Nghị quyết liên tịch","Nghị định",
+                        "Quyết định","Thông tư","Thông tư liên tịch","Chỉ thị","Công điện","Báo cáo","Biên bản","Công văn",
+                        "Điều lệ","Đính chính","Quy chế","Quy định","Quy trình","Quy chế phối hợp","Thông báo","Thông báo liên tịch",
+                        "Thông cáo", "Chỉ dẫn áp dụng văn bản luật","điều","văn bản"
+                    };
+            foreach (var docType in arrayDocument)
+            {
+                if (text.ToLower().Contains(docType.ToLower()))
+                {
+                    hasLegal = true;
+                    break;
+                }
+            }
+            return hasLegal;
+        }
 
         private void AddHistory(HistoryViewModel hisVm)
         {

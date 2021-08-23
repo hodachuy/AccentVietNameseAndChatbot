@@ -717,6 +717,7 @@ namespace BotProject.Service
                                     }.Deserialize<List<LegalApiModel>>(rsHandle.ResultAPI);
                                     if (dataListLegal.Count() != 0)
                                     {
+                                        dataListLegal = dataListLegal.Take(4).ToList();
                                         string resultTotal = "Tìm thấy " + dataListLegal.Count() + " kết quả liên quan văn bản luật";
                                         // kèm payload để thoát tra cứu
                                         rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateText(resultTotal, "{{senderId}}").ToString() + "split" + FacebookTemplate.GetMessageTemplateGenericByListLegal("{{senderId}}", dataListLegal,"", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
@@ -751,7 +752,7 @@ namespace BotProject.Service
                                     if (totalArticle != "0")
                                     {
                                         string resultTotal = "Tìm thấy " + totalArticle + " kết quả liên quan điều luật";
-                                        string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + text;
+                                        string url = "https://trogiupluat.vn/dieu-luat-lien-quan.html?content=" + HttpUtility.UrlEncode(text);
                                         // kèm payload để thoát tra cứu
                                         rsHandle.TemplateJsonFacebook = FacebookTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết", mdSearchDb.Payload, mdSearchDb.TitlePayload).ToString();
                                         rsHandle.TemplateJsonZalo = ZaloTemplate.GetMessageTemplateTextAndButtonLink(resultTotal, "{{senderId}}", url, "Xem chi tiết").ToString()

@@ -30,7 +30,39 @@ namespace BotProject.Common.AppThird3PartyTemplate
 
         public static JObject GetMessageTemplateTextAndButtonLink(string text, string sender, string url, string titleButton, string patternQuickReply = "", string titleQuickReply = "")
         {
-            return JObject.FromObject(
+            if (String.IsNullOrEmpty(patternQuickReply))
+            {
+                return JObject.FromObject(
+                 new
+                 {
+                     recipient = new { id = sender },
+                     message = new
+                     {
+                         attachment = new
+                         {
+                             type = "template",
+                             payload = new
+                             {
+                                 template_type = "button",
+                                 text = text,
+                                 buttons = new[]
+                                 {
+                                     new
+                                     {
+                                          type = "web_url",
+                                          title = titleButton,
+                                          url = url,
+                                          webview_height_ratio = "full"
+                                     }
+                                 }
+                             }
+                         }
+                     },
+                 });
+            }
+            else
+            {
+                return JObject.FromObject(
                  new
                  {
                      recipient = new { id = sender },
@@ -66,6 +98,8 @@ namespace BotProject.Common.AppThird3PartyTemplate
                              }
                      },
                  });
+            }
+            
         }
         public static JObject GetMessageTemplateImage(string urlImage, string sender)
         {

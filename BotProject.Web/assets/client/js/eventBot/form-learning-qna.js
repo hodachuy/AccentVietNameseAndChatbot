@@ -9,7 +9,7 @@
     //urlQnAAddAnswer = "api/qna/addanswer",
     urlQnAAddQuesGroup = "api/qna/addQuesGroup",
     urlQnA_CreateSingleRowQnA = "api/qna/createSingleRowQnA";
-var pageSize = 5;
+var pageSize = 20;
 var countData = 0,// $('.wrap-content .panel.panel-flat').length,
 		limitpage = 10,
 		txtError = 'Lỗi dữ liệu không được để trống',

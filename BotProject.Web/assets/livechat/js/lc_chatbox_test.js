@@ -14,6 +14,200 @@
 //    'Latitude: ' + ipInfo.latitude + '\n' +
 //    'Longtitude: ' + ipInfo.longtitude
 //);
+var recorder;
+var audioFileFromServer = "";
+$(document).ready(function () {
+    window.URL = window.URL || window.webkitURL;
+    /** 
+     * Detecte the correct AudioContext for the browser 
+     * */
+    window.AudioContext = window.AudioContext || window.webkitAudioContext;
+    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+    let startBtn = document.getElementById('btn-on-micro');
+    let stopBtn = document.querySelector('.btn_stop_audio');
+    let stopBtn2 = document.getElementById('btn-submit-chat-message');
+    recorder = new RecordVoiceAudios();
+    startBtn.onclick = recorder.startRecord;
+    stopBtn.onclick = recorder.stopRecord;
+    stopBtn2.onclick = recorder.stopRecord;
+
+    function RecordVoiceAudios() {
+        let audioElement = document.querySelector('audio');
+        let encoder = null;
+        let microphone;
+        let isRecording = false;
+        var audioContext;
+        let processor;
+        let config = {
+            bufferLen: 4096,
+            numChannels: 2,
+            mimeType: 'audio/mpeg'
+        };
+
+        this.startRecord = function () {
+            audioContext = new AudioContext();
+            /** 
+            * Create a ScriptProcessorNode with a bufferSize of 
+            * 4096 and two input and output channel 
+            * */
+            if (audioContext.createJavaScriptNode) {
+                processor = audioContext.createJavaScriptNode(config.bufferLen, config.numChannels, config.numChannels);
+            } else if (audioContext.createScriptProcessor) {
+                processor = audioContext.createScriptProcessor(config.bufferLen, config.numChannels, config.numChannels);
+            } else {
+                console.log('WebAudio API has no support on this browser.');
+                alert('WebAudio API has no support on this browser.')
+                return false;
+            }
+
+            processor.connect(audioContext.destination);
+            /**
+            *  ask permission of the user for use microphone or camera  
+            * */
+            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+                .then(gotStreamMethod)
+                .catch(
+                    logError
+                );
+        };
+
+        let getBuffers = (event) => {
+            var buffers = [];
+            for (var ch = 0; ch < 2; ++ch)
+                buffers[ch] = event.inputBuffer.getChannelData(ch);
+            return buffers;
+        }
+
+        let gotStreamMethod = (stream) => {
+            startBtn.setAttribute('disabled', true);
+            stopBtn.removeAttribute('disabled');
+            audioElement.src = "";
+            config = {
+                bufferLen: 4096,
+                numChannels: 2,
+                mimeType: 'audio/mpeg'
+            };
+            isRecording = true;
+
+            let tracks = stream.getTracks();
+            /** 
+            * Create a MediaStreamAudioSourceNode for the microphone 
+            * */
+            microphone = audioContext.createMediaStreamSource(stream);
+            /** 
+            * connect the AudioBufferSourceNode to the gainNode 
+            * */
+            microphone.connect(processor);
+            encoder = new Mp3LameEncoder(audioContext.sampleRate, 160);
+            /** 
+            * Give the node a function to process audio events 
+            */
+            processor.onaudioprocess = function (event) {
+                encoder.encode(getBuffers(event));
+            };
+
+            stopBtnRecord = () => {
+                audioFileFromServer = "";
+
+                console.log('stopBtnRecord');
+                isRecording = false;
+                startBtn.removeAttribute('disabled');
+                stopBtn.setAttribute('disabled', true);
+                audioContext.close();
+                processor.disconnect();
+                tracks.forEach(track => track.stop());
+                let blobs = encoder.finish('audio/wav');
+                audioElement.src = URL.createObjectURL(blobs);                
+
+                // pass variable outside ajax call
+                audioFileFromServer = function (blobs) {
+                    data = new FormData();
+                    data.append('file', blobs);
+                    $.ajax({
+                        type: 'POST',
+                        url: _Host + "api/livechat/import-audio",
+                        async: false,//muốn pass data ra ngoài biến nên có asynce
+                        global: false,
+                        enctype: 'multipart/form-data',
+                        processData: false,
+                        contentType: false,
+                        data: data,
+                        success: function (result) {
+                            console.log(result)
+                            if (result.status) {
+                                tmp = _Host + result.data;
+                            }
+                        }
+                    });
+                    return tmp;
+                }(blobs);
+
+                console.log(audioFileFromServer)
+            };
+
+            //analizer(audioContext);
+        }
+
+        this.stopRecord = function () {
+            stopBtnRecord();
+        };
+
+        let analizer = (context) => {
+            let listener = context.createAnalyser();
+            microphone.connect(listener);
+            listener.fftSize = 256;
+            var bufferLength = listener.frequencyBinCount;
+            let analyserData = new Uint8Array(bufferLength);
+
+            let getVolume = () => {
+                let volumeSum = 0;
+                let volumeMax = 0;
+
+                listener.getByteFrequencyData(analyserData);
+
+                for (let i = 0; i < bufferLength; i++) {
+                    volumeSum += analyserData[i];
+                }
+
+                let volume = volumeSum / bufferLength;
+
+                if (volume > volumeMax)
+                    volumeMax = volume;
+
+                //drawAudio(volume / 10);
+                /**
+                * Call getVolume several time for catch the level until it stop the record
+                */
+                return setTimeout(() => {
+                    if (isRecording)
+                        getVolume();
+                }, 10);
+            }
+
+            getVolume();
+        }
+
+
+
+        let logError = (error) => {
+            $("#btn-remove-audio").addClass('d-none');
+            $(".form-input-audio").addClass('d-none');
+
+            $(".form-input-text").removeClass('d-none');
+            $(".menu-footer").removeClass('d-none');
+            $(".form-action-audio").removeClass('d-none');
+
+            window.clearTimeout(timeOutAudio);
+            document.getElementById('audio-realtime').innerHTML = "00:00";
+            alert(error);
+            console.log(error);
+            return false;
+        }
+    }
+
+})
+
+var timeOutAudio;
 
 var CustomerModel = {
     ID: _customerId,
@@ -568,7 +762,7 @@ var cBoxMessage = {
                 return false;
             }
             if (text.length > 0) {
-                $(".btn_submit").show();
+                //$(".btn_submit").show();
                 if (isTyping == false) {
                     isTyping = true;
                     objHub.server.sendTyping(_channelGroupId, CustomerModel.ThreadID, '', '', CustomerModel.ID, isTyping, TYPE_USER_CONNECT.CUSTOMER);
@@ -576,7 +770,7 @@ var cBoxMessage = {
             } else {
                 isTyping = false;
                 objHub.server.sendTyping(_channelGroupId, CustomerModel.ThreadID, '', '', CustomerModel.ID, isTyping, TYPE_USER_CONNECT.CUSTOMER);
-                $(".btn_submit").hide();
+                //$(".btn_submit").hide();
             }
         })
 
@@ -600,7 +794,7 @@ var cBoxMessage = {
                     }
                     isTyping = false;
 
-                    $(".btn_submit").hide();
+                    //$(".btn_submit").hide();
 
                     return;
                 }
@@ -626,9 +820,24 @@ var cBoxMessage = {
                     new messageBot.renderTemplate('', '').Typing();
                     new messageBot.getMessage(text, CustomerModel.ThreadID, setting.BotID);
                 }
-
-                $(".btn_submit").hide();
             }
+
+            if (setting.isTransferToBot == true) {
+                if (text == "") {
+                    if (!$(".form-input-audio").hasClass('d-none')) {
+                        let srcAudio = $("#file-audio").attr('src');
+                        let fileAudio = '<audio class="message-audio" controls="" type="audio/mpeg" src="' + srcAudio + '" style="width:160px;height:40px"></audio>';
+                        insertChat("customer", fileAudio, CustomerModel.Name, '');
+
+                        if (audioFileFromServer != "") {
+                            new messageBot.renderTemplate('', '').Typing();
+                            new messageBot.getMessage(audioFileFromServer, CustomerModel.ThreadID, setting.BotID);
+                        }
+                    }
+                    resetAudio();
+                }                
+            }
+                       
             return;
         })
 
@@ -647,6 +856,37 @@ var cBoxMessage = {
             // bot xử lý
             new messageBot.getMessage(dataPostback, CustomerModel.ThreadID, setting.BotID);
         })
+
+        $('body').on('click', '#btn-on-micro', function () {
+            $("#input-chat-message").val('');
+            $(".form-input-text").addClass('d-none');
+            $(".menu-footer").addClass('d-none');
+            $(".form-action-audio").addClass('d-none');
+
+            $("#btn-remove-audio").removeClass('d-none');
+            $(".form-input-audio").removeClass('d-none');
+
+            format_time_audio(1);
+        })
+
+        $("body").on('click', '#btn-remove-audio', function () {
+            resetAudio();
+        })
+        function format_time_audio(audio_duration) {
+            sec = Math.floor(audio_duration);
+            min = Math.floor(sec / 60);
+            min = min >= 10 ? min : '0' + min;
+            sec = Math.floor(sec % 60);
+            sec = sec >= 10 ? sec : '0' + sec;
+
+            document.getElementById('audio-realtime').innerHTML = min + ":" + sec;
+            timeOutAudio = setTimeout(function () {
+                let increasTime = parseInt(audio_duration) + 1;
+                format_time_audio(increasTime)
+            }, 1000);
+
+            //return min + ":" + sec;
+        }
     },
     callAction: function () {
         this.sendMessage = function () {
@@ -693,6 +933,10 @@ function insertChat(who, text, userName, avatar) {
 
     // insert body chat
     messageUser.appendMessage("", who, content);
+
+    $(".message-audio").each(function (index) {
+        $(this).parent().css('background-color', 'white').css('border', '0');
+    })
     return false;
 }
 
@@ -864,6 +1108,8 @@ var messageBot = {
                             // gửi tin vai trò hiển thị của BOT trong chatroom
                         })
                     }
+                } else {
+                    $(".message-item-typing").remove();
                 }
             }
         })
@@ -971,7 +1217,7 @@ var messageBot = {
                     tmpText += '                        </div>';
                     tmpText += '                    </div>';
                 }
-                tmpText += '                    <div class="message-item-content"> ' + iconFile + ' <a class="btn-link-file" href="' + urlFile + '"> ' + fileName + '</a></div>';
+                tmpText += '                    <div class="message-item-content"> ' + iconFile + ' <a class="btn-link-file" href="' + urlFile + '" target="_blank"> ' + fileName + '</a></div>';
                 tmpText += '                </div>';
                 tmpText += '</div>';
                 return tmpText;
@@ -1066,8 +1312,14 @@ var messageBot = {
                 return tmpText;
             },
             this.GenericIndex = function (generic, calbackButton) {
-                var tmpText = '<div class="message-item-template-generic">';
+            var tmpText = '<div class="message-item-template-generic">';
+            if (generic.image_url.includes("faq_legal")) {
+                tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;display:none">';
+
+            } else {
                 tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
+
+            }
                 tmpText += '                                </div>';
                 tmpText += '                                <div class="message-template-generic-container _6j2g">';
                 tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
@@ -1169,3 +1421,16 @@ window.addEventListener('message', function (event) {
         firstClick = true;
     }
 }, false);
+
+function resetAudio() {
+    $("#btn-remove-audio").addClass('d-none');
+    $(".form-input-audio").addClass('d-none');
+
+    $(".form-input-text").removeClass('d-none');
+    $(".menu-footer").removeClass('d-none');
+    $(".form-action-audio").removeClass('d-none');
+
+    window.clearTimeout(timeOutAudio);
+    document.getElementById('audio-realtime').innerHTML = "00:00";
+}
+
