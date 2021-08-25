@@ -64,11 +64,25 @@ $(document).ready(function () {
             /**
             *  ask permission of the user for use microphone or camera  
             * */
-            navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-                .then(gotStreamMethod)
-                .catch(
-                    logError
-                );
+
+            //navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            //    .then(gotStreamMethod)
+            //    .catch(
+            //        logError
+            //);
+
+            getMedia();
+
+            async function getMedia() {
+                let stream = null;
+
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    gotStreamMethod(stream);
+                } catch (err) {
+                    logError(err);
+                }
+            }
         };
 
         let getBuffers = (event) => {
@@ -88,6 +102,8 @@ $(document).ready(function () {
                 mimeType: 'audio/mpeg'
             };
             isRecording = true;
+
+            format_time_audio(1);
 
             let tracks = stream.getTracks();
             /** 
@@ -117,7 +133,7 @@ $(document).ready(function () {
                 processor.disconnect();
                 tracks.forEach(track => track.stop());
                 let blobs = encoder.finish('audio/wav');
-                audioElement.src = URL.createObjectURL(blobs);                
+                audioElement.src = URL.createObjectURL(blobs);
 
                 // pass variable outside ajax call
                 audioFileFromServer = function (blobs) {
@@ -248,7 +264,7 @@ var setting = {
     isAgentOnline: false,
     isTransferToBot: false,
     BotID: '',
-    FirstCardID:''
+    FirstCardID: ''
 }
 
 
@@ -625,7 +641,7 @@ var checkBotActive = function () {
 
 var getCardInit = function () {
     var card = {
-        cardId : ''
+        cardId: ''
     };
 
     var params = {
@@ -835,9 +851,9 @@ var cBoxMessage = {
                         }
                     }
                     resetAudio();
-                }                
+                }
             }
-                       
+
             return;
         })
 
@@ -866,27 +882,12 @@ var cBoxMessage = {
             $("#btn-remove-audio").removeClass('d-none');
             $(".form-input-audio").removeClass('d-none');
 
-            format_time_audio(1);
         })
 
         $("body").on('click', '#btn-remove-audio', function () {
             resetAudio();
         })
-        function format_time_audio(audio_duration) {
-            sec = Math.floor(audio_duration);
-            min = Math.floor(sec / 60);
-            min = min >= 10 ? min : '0' + min;
-            sec = Math.floor(sec % 60);
-            sec = sec >= 10 ? sec : '0' + sec;
 
-            document.getElementById('audio-realtime').innerHTML = min + ":" + sec;
-            timeOutAudio = setTimeout(function () {
-                let increasTime = parseInt(audio_duration) + 1;
-                format_time_audio(increasTime)
-            }, 1000);
-
-            //return min + ":" + sec;
-        }
     },
     callAction: function () {
         this.sendMessage = function () {
@@ -1045,9 +1046,26 @@ var messageBot = {
                     var lstTemplateHtml = [];
                     let date_current = showTimeChat();
                     $.each(response.data, function (index, value) {
+                        let timeSpeaker = (parseInt(index) + 1) * 1500;
                         if (value.message.text != undefined) {
                             let tempText = new messageBot.renderTemplate(date_current, '').Text(value.message.text);
                             lstTemplateHtml.push(tempText);
+                            if (window.sessionStorage.getItem("v_isOpenVolumn") == "true" && window.sessionStorage.getItem("v_voiceSpeaker") != "") {
+                                //textToSpeech(value.message.text);
+                                setTimeout(function () {
+                                    textToSpeech(value.message.text).then(function (data) {
+                                        console.log(data)
+                                        if (data.error == 0) {
+                                            let mp3File = data.async;
+                                            setTimeout(function () {
+                                                playAudioBotMessage(mp3File);
+                                            }, timeSpeaker)
+                                        }
+                                    }).catch(function (err) {
+                                        console.log(err)
+                                    })
+                                }, timeSpeaker)                              
+                            }
                         }
                         if (value.message.attachment != undefined) {
                             if (value.message.attachment.type == "image") {
@@ -1312,14 +1330,14 @@ var messageBot = {
                 return tmpText;
             },
             this.GenericIndex = function (generic, calbackButton) {
-            var tmpText = '<div class="message-item-template-generic">';
-            if (generic.image_url.includes("faq_legal")) {
-                tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;display:none">';
+                var tmpText = '<div class="message-item-template-generic">';
+                if (generic.image_url.includes("faq_legal")) {
+                    tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;display:none">';
 
-            } else {
-                tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
+                } else {
+                    tmpText += '                               <div class="message-banner _6j0s" style="background-image: url(' + generic.image_url + '); background-position: center center; height: 150px; width: 100%;">';
 
-            }
+                }
                 tmpText += '                                </div>';
                 tmpText += '                                <div class="message-template-generic-container _6j2g">';
                 tmpText += '                                    <div class="message-generic-title _6j0t _4ik4 _4ik5" style="-webkit-line-clamp: 3;">';
@@ -1403,6 +1421,38 @@ function scrollBar() {
     $(".messages").scrollTop($(".messages").prop('scrollHeight'));
 }
 
+function textToSpeech(text) {
+    var regex = /<br\s*[\/]?>/gi;
+    text = text.replace(regex, " ");
+    var payload = text;
+    var apiText2Speech = "https://api.fpt.ai/hmi/tts/v5";
+    return new Promise(function (resolve, reject) {
+        $.ajax({
+            url: apiText2Speech,
+            type: "POST",
+            crossDomain: true,
+            async: false,
+            data: payload,
+            headers: {
+                "api-key": "wMgI3aH5BUD06hkRMr1i5IBr4l3guzM8",
+                "voice": window.sessionStorage.getItem("v_voiceSpeaker"),
+            },
+            dataType: 'json',
+            success: function (data) {
+                resolve(data);
+            },
+            error: function (response) {
+                reject(err);
+            },
+        })
+    });
+}
+
+function playAudioBotMessage(mp3File) {
+    var audio = new Audio(mp3File);
+    audio.play();
+}
+
 window.addEventListener('message', function (event) {
     var widthParent = parseInt(event.data);
     //console.log('init')
@@ -1434,3 +1484,19 @@ function resetAudio() {
     document.getElementById('audio-realtime').innerHTML = "00:00";
 }
 
+
+function format_time_audio(audio_duration) {
+    sec = Math.floor(audio_duration);
+    min = Math.floor(sec / 60);
+    min = min >= 10 ? min : '0' + min;
+    sec = Math.floor(sec % 60);
+    sec = sec >= 10 ? sec : '0' + sec;
+
+    document.getElementById('audio-realtime').innerHTML = min + ":" + sec;
+    timeOutAudio = setTimeout(function () {
+        let increasTime = parseInt(audio_duration) + 1;
+        format_time_audio(increasTime)
+    }, 1000);
+
+    //return min + ":" + sec;
+}
